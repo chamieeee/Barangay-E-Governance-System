@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barangay E-Governance Portal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <div class="gov-seal">⚖️</div>
+            <div>
+                <div class="logo">BARANGAY GOV PORTAL</div>
+                <div class="logo-subtext">Official Public Services & Administrative Registry</div>
+            </div>
+        </div>
+        <nav style="display: flex; align-items: center;">
+            <span id="userBadge" class="hidden" style="color: #cbd5e1; margin-right: 1rem; font-size: 0.9rem; font-weight: 600;"></span>
+            <button id="logoutBtn" class="hidden" style="border-color: #f87171; color: #f87171;">Sign Out</button>
+        </nav>
+    </header>
+
+    <main class="container">
+        
+        <section id="authSection">
+            <div class="auth-card">
+                <div class="auth-tabs">
+                    <button id="tabLogin" class="auth-tab active">Sign In</button>
+                    <button id="tabRegister" class="auth-tab">Create Account</button>
+                </div>
+
+                <form id="loginForm">
+                    <h3 style="margin-bottom: 1.5rem; text-align: center; color: var(--gov-navy);">Account Sign In</h3>
+                    <label for="loginEmail">Registered Email Address</label>
+                    <input type="email" id="loginEmail" placeholder="name@domain.com" required>
+                    
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                    
+                    <button type="submit" class="btn-primary">Authenticate Account</button>
+                </form>
+
+                <form id="registerForm" class="hidden">
+                    <h3 style="margin-bottom: 1.5rem; text-align: center; color: var(--gov-navy);">Resident Registry Registration</h3>
+                    <label for="regEmail">Email Address</label>
+                    <input type="email" id="regEmail" placeholder="name@domain.com" required>
+                    
+                    <label for="regPassword">Secure Password</label>
+                    <input type="password" id="regPassword" placeholder="Minimum 6 characters" required>
+
+                    <label for="accountRole">Account Registration Type</label>
+                    <select id="accountRole" required>
+                        <option value="Resident">Standard Resident Account</option>
+                        <option value="Admin">Barangay Official / Admin Staff</option>
+                    </select>
+                    
+                    <button type="submit" class="btn-primary" style="background-color: var(--gov-gold); color: white;">Register System Credentials</button>
+                </form>
+            </div>
+        </section>
+
+        <section id="residentSection" class="hidden">
+            <div class="welcome-hero">
+                <h1>Online Barangay Services Portal</h1>
+                <p>Access public documentation, submit digital forms, and file community updates directly to your local officials.</p>
+            </div>
+
+            <div class="portal-grid">
+                <div class="portal-card">
+                    <div class="card-header-accent docs-accent"></div>
+                    <div class="card-title-wrapper">
+                        <span class="card-icon">🪪</span>
+                        <h3>Document Request Registry</h3>
+                    </div>
+                    <p class="form-instruction">Please fill out your complete legal identification details below to register your document request.</p>
+                    
+                    <form id="docRequestForm">
+                        <label for="reqName">Full Legal Name</label>
+                        <input type="text" id="reqName" placeholder="e.g., Juan Dela Cruz" required>
+                        
+                        <label for="reqAddress">Residential Address</label>
+                        <input type="text" id="reqAddress" placeholder="Street, Block, Lot, or Zone Number" required>
+                        
+                        <label for="docType">Requested Certification Type</label>
+                        <select id="docType" required>
+                            <option value="">-- Choose Document --</option>
+                            <option value="Barangay Clearance">Barangay Clearance</option>
+                            <option value="Certificate of Residency">Certificate of Residency</option>
+                            <option value="Certificate of Indigency">Certificate of Indigency</option>
+                        </select>
+                        
+                        <label for="reqPurpose">Legal Purpose of Request</label>
+                        <textarea id="reqPurpose" placeholder="e.g., Local Employment Requirements, Bank Loan, Scholarship Application" rows="3" required></textarea>
+                        
+                        <button type="submit" class="btn-primary">Submit Official Request</button>
+                    </form>
+                </div>
+
+                <div class="portal-card">
+                    <div class="card-header-accent blotter-accent"></div>
+                    <div class="card-title-wrapper">
+                        <span class="card-icon">📢</span>
+                        <h3>Public Incident &amp; Blotter Logging</h3>
+                    </div>
+                    <p class="form-instruction">Report civic issues, community disturbances, or file a formal blotter statement securely.</p>
+                    
+                    <form id="complaintForm">
+                        <label for="complainantName">Complainant Name <span class="optional-tag">(Optional / Anonymous)</span></label>
+                        <input type="text" id="complainantName" placeholder="Leave blank to submit anonymously">
+                        
+                        <label for="complaintSubject">Incident Subject Heading</label>
+                        <input type="text" id="complaintSubject" placeholder="e.g., Noise Disturbance, Neighborhood Dispute" required>
+                        
+                        <label for="complaintDetails">Comprehensive Narrative Statement</label>
+                        <textarea id="complaintDetails" placeholder="Provide a detailed timeline description of the incident, names involved, and specific location events..." rows="6" required></textarea>
+                        
+                        <button type="submit" class="btn-danger">File Official Statement</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+       <section id="adminSection" class="hidden">
+            <div class="admin-header-title">
+                <h2>Administrative Executive Command Panel</h2>
+                <p>Real-Time Public Request Verification and Incident Tracking Logs</p>
+            </div>
+            
+            <div class="admin-panel-block">
+                <div class="block-title-wrapper">
+                    <span class="block-icon">📋</span>
+                    <h3>Incoming Certification Processing Queue</h3>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Resident Identity &amp; Location</th>
+                                <th>Requested Clearance</th>
+                                <th>Stated Purpose</th>
+                                <th>Current Status</th>
+                                <th>Administrative Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="docTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="admin-panel-block">
+                <div class="block-title-wrapper">
+                    <span class="block-icon">🔨</span>
+                    <h3>Public Complaints &amp; Active Blotter Records</h3>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Reporting Party</th>
+                                <th>Subject Classification</th>
+                                <th>Incident Narrative Case Details</th>
+                                <th>Operational Status</th>
+                                <th>Administrative Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="complaintTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
