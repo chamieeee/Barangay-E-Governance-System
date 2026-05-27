@@ -921,15 +921,6 @@ body.auth-mode .app-layout {
     border-radius: 8px;
 }
 
-/* Sidebar removal for authentication */
-body.auth-mode .sidebar-nav {
-    display: none !important;
-}
-
-body.auth-mode .app-layout {
-    display: block !important;
-}
-
 /* Center the login/register card */
 body.auth-mode #authSection {
     max-width: 600px;
