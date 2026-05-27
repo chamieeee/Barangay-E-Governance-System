@@ -49,12 +49,12 @@ let activeDashboardStatsUnsubscribers = [];
    ========================================================== */
 onAuthStateChanged(auth, async (user) => {
     const path = window.location.pathname;
-    const isLoginPage = path.includes("index.html") || path === "/" || path === "/login.html" === false;
+    const isLoginPage = path.includes("index.html") || path === "/" || path === "/dashboard.html" === false;
 
     if (user) {
         // If user IS logged in, ensure they are on login.html
-        if (isLoginPage && !path.includes("login.html")) {
-            window.location.href = "login.html";
+        if (isLoginPage && !path.includes("dashboard.html")) {
+            window.location.href = "dashboard.html";
             return;
         }
 
