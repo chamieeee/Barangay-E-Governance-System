@@ -49,12 +49,12 @@ let activeDashboardStatsUnsubscribers = [];
    ========================================================== */
 onAuthStateChanged(auth, async (user) => {
     const path = window.location.pathname;
-    const isLoginPage = path.includes("login.html") || path === "/" || path === "/index.html" === false;
+    const isLoginPage = path.includes("index.html") || path === "/" || path === "/login.html" === false;
 
     if (user) {
-        // If user IS logged in, ensure they are on index.html
-        if (isLoginPage && !path.includes("index.html")) {
-            window.location.href = "index.html";
+        // If user IS logged in, ensure they are on login.html
+        if (isLoginPage && !path.includes("login.html")) {
+            window.location.href = "login.html";
             return;
         }
 
@@ -107,8 +107,8 @@ onAuthStateChanged(auth, async (user) => {
 
     } else {
         // If user IS NOT logged in, ensure they are on login.html
-        if (!isLoginPage && !path.includes("login.html")) {
-            window.location.href = "login.html";
+        if (!isLoginPage && !path.includes("index.html")) {
+            window.location.href = "index.html";
         }
     }
 });
