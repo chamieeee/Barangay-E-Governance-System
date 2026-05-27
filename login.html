@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Barangay Portal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-page-body">
+<section id="authSection" class="auth-card page-view active">
+    <header class="auth-header-container">
+        <svg class="auth-gov-icon" viewBox="0 0 24 24">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 7c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 7c2.67 0 8 1.34 8 4v1H4v-1c0-2.66 5.33-4 8-4z"/>
+        </svg>
+        <h1 class="auth-page-title">BARANGAY PORTAL</h1>
+        <p class="auth-subtitle">Official Public Registry & Identity Terminal</p>
+    </header>
+
+    <div class="auth-tabs">
+        <button id="tabLogin" class="tab-btn active">Account Login</button>
+        <button id="tabRegister" class="tab-btn">Register Resident</button>
+    </div>
+
+    <form id="loginForm" class="auth-form">
+        <div class="form-group">
+            <label for="loginEmail">Email Address</label>
+            <input type="email" id="loginEmail" placeholder="citizen@domain.gov.ph" required>
+        </div>
+        <div class="form-group">
+            <label for="loginPassword">Security Access Key</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-primary">Authenticate Account</button>
+    </form>
+
+    <form id="registerForm" class="auth-form hidden">
+        <div class="form-group">
+            <label for="regEmail">Email Address</label>
+            <input type="email" id="regEmail" placeholder="name@domain.com" required>
+        </div>
+        <div class="form-group">
+            <label for="regPassword">Account Password</label>
+            <input type="password" id="regPassword" placeholder="Minimum 6 characters" required>
+        </div>
+        <div class="form-group">
+            <label for="accountRole">Designated Access Clearance</label>
+            <select id="accountRole" required>
+                <option value="Resident" selected>Resident (Public Terminal Access)</option>
+                <option value="Admin">Admin (Barangay Official / Staff)</option>
+            </select>
+        </div>
+
+        <div class="form-section-divider">Profile Record Dossier</div>
+
+        <div class="form-group">
+            <label for="regFullName">Full Legal Name</label>
+            <input type="text" id="regFullName" placeholder="Firstname Middlename Lastname" required>
+        </div>
+        <div class="form-group">
+            <label for="regContact">Contact Mobile Number</label>
+            <input type="tel" id="regContact" placeholder="09XXXXXXXXX" pattern="09[0-9]{9}" required>
+        </div>
+        <div class="form-row-grid">
+            <div class="form-group">
+                <label for="regDob">Date of Birth</label>
+                <input type="date" id="regDob" required>
+            </div>
+            <div class="form-group">
+                <label for="regSex">Sex assigned at Birth</label>
+                <select id="regSex" required>
+                    <option value="" selected disabled>Select</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="regCivilStatus">Civil Status</label>
+            <select id="regCivilStatus" required>
+                <option value="" selected disabled>Select Status</option>
+                <option value="Single">Single</option>
+                <option value="Married">Married</option>
+                <option value="Divorced">Divorced</option>
+                <option value="Widowed">Widowed</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="regAddressStr">Complete Home Address</label>
+            <input type="text" id="regAddressStr" placeholder="House No., Street Name, Purok/Zone" required>
+        </div>
+        <div class="form-group">
+            <label for="regOccupation">Occupation / Livelihood Sector</label>
+            <input type="text" id="regOccupation" placeholder="Unemployed, Student, Engineer, etc." required>
+        </div>
+        <div class="preference-manual-box">
+            <label class="checkbox-container">
+                <input type="checkbox" id="regIsSenior">
+                Certified Senior Citizen Status Holder
+            </label>
+            <label class="checkbox-container" style="margin-top: 0.5rem;">
+                <input type="checkbox" id="regIsPwd">
+                Registered Person with Disability (PWD) Status
+            </label>
+        </div>
+
+        <button type="submit" class="btn-primary" style="margin-top: 1rem;">Register System Account</button>
+    </form>
+</section>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
