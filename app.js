@@ -47,17 +47,23 @@ let activeDashboardStatsUnsubscribers = [];
 /* ==========================================================
    1. AUTHENTICATION STATE LOGIC & REDIRECTION
    ========================================================== */
+
+// Detect which page we're currently on
+const ON_LOGIN_PAGE = !!document.getElementById("loginForm") && !document.getElementById("adminDashboardPage");
+const ON_DASHBOARD_PAGE = !!document.getElementById("adminDashboardPage");
+
 onAuthStateChanged(auth, async (user) => {
-    const path = window.location.pathname;
-    const isLoginPage = path.includes("index.html") || path === "/" || path === "/dashboard.html" === false;
+    activeDashboardStatsUnsubscribers.forEach(unsub => unsub());
+    activeDashboardStatsUnsubscribers = [];
 
     if (user) {
-        // If user IS logged in, ensure they are on login.html
-        if (isLoginPage && !path.includes("dashboard.html")) {
+        // User is logged in — if they're on the login page, send them to the dashboard
+        if (ON_LOGIN_PAGE) {
             window.location.href = "dashboard.html";
             return;
         }
 
+        // --- Dashboard page logic (unchanged) ---
         const logoutBtn = document.getElementById("logoutBtn");
         const userBadgeWrapper = document.getElementById("userBadgeWrapper");
         const userBadge = document.getElementById("userBadge");
@@ -66,19 +72,21 @@ onAuthStateChanged(auth, async (user) => {
         const residentLinks = document.getElementById("residentLinks");
         const adminLinks = document.getElementById("adminLinks");
 
-        activeDashboardStatsUnsubscribers.forEach(unsub => unsub());
-        activeDashboardStatsUnsubscribers = [];
+        userBadge.innerText = user.email.split('@')[0];
+        userBadgeWrapper.classList.remove("hidden");
+        logoutBtn.classList.remove("hidden");
+        sidebarMenu.classList.remove("hidden");
 
-        if (userBadge) userBadge.innerText = user.email.split('@')[0];
-        if (userBadgeWrapper) userBadgeWrapper.classList.remove("hidden");
-        if (logoutBtn) logoutBtn.classList.remove("hidden");
-        if (sidebarMenu) sidebarMenu.classList.remove("hidden");
-
+        // Sync profile form input values
         syncUserProfileViewDetails(user.uid, user.email);
 
         try {
             const roleSnapshot = await getDoc(doc(db, "user_roles", user.uid));
-            let finalRole = roleSnapshot.exists() ? roleSnapshot.data().role : "Resident";
+            let finalRole = "Resident";
+            
+            if (roleSnapshot.exists()) {
+                finalRole = roleSnapshot.data().role || "Resident";
+            }
             
             currentCachedUserRole = finalRole;
             roleBadge.className = "role-indicator-tag"; 
@@ -86,16 +94,20 @@ onAuthStateChanged(auth, async (user) => {
             if (finalRole === "Admin") {
                 roleBadge.innerText = "[Admin Account]";
                 roleBadge.classList.add("admin-tag");
+                
                 adminLinks.classList.remove("hidden");
                 residentLinks.classList.add("hidden");
                 clearSidebarActiveLinks("adminLinks");
                 navigateToPage("adminDashboardPage"); 
                 initializeAdminLiveInflowFeed();
                 setupLiveDashboardCounters("Admin", user.email);
+
                 loadRegisteredResidents();
+
             } else {
                 roleBadge.innerText = "[Resident Account]";
                 roleBadge.classList.add("resident-tag");
+                
                 residentLinks.classList.remove("hidden");
                 adminLinks.classList.add("hidden");
                 clearSidebarActiveLinks("residentLinks");
@@ -106,14 +118,14 @@ onAuthStateChanged(auth, async (user) => {
         } catch (err) { console.error("Access classification lookup failed:", err); }
 
     } else {
-        // If user IS NOT logged in, ensure they are on login.html
-        if (!isLoginPage && !path.includes("index.html")) {
+        // User is NOT logged in — if they're on the dashboard, redirect to login
+        if (ON_DASHBOARD_PAGE) {
             window.location.href = "index.html";
+            return;
         }
+        // If already on login page, do nothing — the login/register forms are already visible
     }
 });
-
-// [Rest of your existing functions: clearSidebarActiveLinks, document.addEventListener DOMContentLoaded, navigateToPage, setupLiveDashboardCounters, etc., remain exactly as you had them]
 
 function clearSidebarActiveLinks(groupContainerId) {
     document.querySelectorAll(".nav-link").forEach(btn => btn.classList.remove("active"));
@@ -125,17 +137,30 @@ function clearSidebarActiveLinks(groupContainerId) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Check if elements exist before adding listeners to avoid null errors on the wrong page
-    if(document.getElementById("tabLogin")) document.getElementById("tabLogin").addEventListener("click", () => switchAuthTab('login'));
-    if(document.getElementById("tabRegister")) document.getElementById("tabRegister").addEventListener("click", () => switchAuthTab('register'));
+    // --- Login page listeners (only run on login.html) ---
+    if (ON_LOGIN_PAGE) {
+        document.getElementById("tabLogin").addEventListener("click", () => switchAuthTab('login'));
+        document.getElementById("tabRegister").addEventListener("click", () => switchAuthTab('register'));
+        document.getElementById("registerForm").addEventListener("submit", handleRegisterSubmit);
+        document.getElementById("loginForm").addEventListener("submit", handleLoginSubmit);
+        return; // Nothing else to set up on the login page
+    }
 
-    if(document.getElementById("registerForm")) document.getElementById("registerForm").addEventListener("submit", handleRegisterSubmit);
-    if(document.getElementById("loginForm")) document.getElementById("loginForm").addEventListener("submit", handleLoginSubmit);
-    if(document.getElementById("profileForm")) document.getElementById("profileForm").addEventListener("submit", handleProfileUpdateSubmit);
-    if(document.getElementById("docRequestForm")) document.getElementById("docRequestForm").addEventListener("submit", handleDocSubmit);
-    if(document.getElementById("complaintForm")) document.getElementById("complaintForm").addEventListener("submit", handleComplaintSubmit);
-    if(document.getElementById("adminAnnouncementForm")) document.getElementById("adminAnnouncementForm").addEventListener("submit", handleAnnouncementSubmit);
-    if(document.getElementById("logoutBtn")) document.getElementById("logoutBtn").addEventListener("click", handleLogout);
+    // --- Dashboard page listeners (only run on index.html) ---
+    const profileForm = document.getElementById("profileForm");
+    if (profileForm) profileForm.addEventListener("submit", handleProfileUpdateSubmit);
+
+    const docRequestForm = document.getElementById("docRequestForm");
+    if (docRequestForm) docRequestForm.addEventListener("submit", handleDocSubmit);
+
+    const complaintForm = document.getElementById("complaintForm");
+    if (complaintForm) complaintForm.addEventListener("submit", handleComplaintSubmit);
+
+    const adminAnnouncementForm = document.getElementById("adminAnnouncementForm");
+    if (adminAnnouncementForm) adminAnnouncementForm.addEventListener("submit", handleAnnouncementSubmit);
+
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) logoutBtn.addEventListener("click", handleLogout);
 
     document.querySelectorAll(".nav-link").forEach(btn => {
         btn.addEventListener("click", (e) => {
@@ -146,13 +171,15 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    if(document.getElementById("docNotifSms")) document.getElementById("docNotifSms").addEventListener("change", (e) => {
+    const docNotifSms = document.getElementById("docNotifSms");
+    if (docNotifSms) docNotifSms.addEventListener("change", (e) => {
         document.getElementById("docSmsGroup").classList.toggle("hidden", !e.target.checked);
         if(e.target.checked) document.getElementById("docSmsNumber").setAttribute("required", "true");
         else document.getElementById("docSmsNumber").removeAttribute("required");
     });
-    
-    if(document.getElementById("complaintNotifSms")) document.getElementById("complaintNotifSms").addEventListener("change", (e) => {
+
+    const complaintNotifSms = document.getElementById("complaintNotifSms");
+    if (complaintNotifSms) complaintNotifSms.addEventListener("change", (e) => {
         document.getElementById("complaintSmsGroup").classList.toggle("hidden", !e.target.checked);
         if(e.target.checked) document.getElementById("complaintSmsNumber").setAttribute("required", "true");
         else document.getElementById("complaintSmsNumber").removeAttribute("required");
@@ -164,8 +191,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const docTypeSelect = document.getElementById("docType");
     if (docTypeSelect) docTypeSelect.addEventListener("change", updateFormPriceDisplay);
 
-    if(document.getElementById("closeQrBtn")) document.getElementById("closeQrBtn").addEventListener("click", toggleQrModal);
-    if(document.getElementById("confirmQrBtn")) document.getElementById("confirmQrBtn").addEventListener("click", toggleQrModal);
+    const closeQrBtn = document.getElementById("closeQrBtn");
+    if (closeQrBtn) closeQrBtn.addEventListener("click", toggleQrModal);
+
+    const confirmQrBtn = document.getElementById("confirmQrBtn");
+    if (confirmQrBtn) confirmQrBtn.addEventListener("click", toggleQrModal);
     
     initializeDataPipelineMonitors();
     initializeLiveBulletinBoard();
@@ -789,50 +819,71 @@ function escapeHtmlText(text) {
 /* ==========================================================
    8. REAL-TIME ACCOUNTABILITY LOG FEEDS
    ========================================================== */
-
-// Helper to format the HTML log
-function createLogHtml(data, dateStr) {
-    let typeClass = "";
-    if (data.type === "Blotter") typeClass = "blotter";
-    if (data.type === "Deletion Alert") typeClass = "deletion";
-    // Add more conditions here if you have other types
-
-    return `
-        <div class="log-item ${typeClass}">
-            <div class="log-content">
-                <h4>${data.title}</h4>
-                <p>${data.message}</p>
-                <small style="color:var(--text-muted);">Action by: <b>${data.updatedBy || 'System'}</b></small>
-            </div>
-            <span class="log-timestamp">${dateStr}</span>
-        </div>
-    `;
-}
-
 function initializeResidentNotificationsFeed(activeResidentEmail) {
     const container = document.getElementById("residentNotifContainer");
     if (!container) return;
 
     onSnapshot(systemNotifColl, (snapshot) => {
+        let sortedDocs = [];
+        snapshot.forEach(d => sortedDocs.push(d.data()));
+        sortedDocs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
         let items = [];
-        snapshot.forEach(d => {
-            const data = d.data();
+        sortedDocs.forEach((data) => {
             if (data.targetResidentEmail === activeResidentEmail || data.targetResidentEmail === "ALL_RESIDENTS") {
                 const dateStr = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleString() : new Date().toLocaleString();
-                items.push({ data, dateStr });
+                
+                let accentBorder = "var(--accent-blue)";
+                if (data.type === "Blotter") accentBorder = "var(--semantic-pending)";
+                if (data.type === "Deletion Alert") accentBorder = "var(--semantic-danger)";
+
+                items.push(`
+                    <div class="log-item ${data.type === 'Blotter' ? 'blotter' : data.type === 'Deletion Alert' ? 'deletion' : 'success'}">
+                        <div class="log-content">
+                            <h4>${data.title}</h4>
+                            <p>${data.message}</p>
+                            <small style="color:var(--text-muted);">Action by: <b>${data.updatedBy || 'System'}</b></small>
+                        </div>
+                        <span class="log-timestamp">${dateStr}</span>
+                    </div>
+                `);
             }
         });
-
-        // Sort by newest
-        items.sort((a, b) => (b.data.timestamp?.seconds || 0) - (a.data.timestamp?.seconds || 0));
-        
-        container.innerHTML = items.length === 0 
-            ? `<p class="notif-empty-state">No notification history.</p>` 
-            : items.map(item => createLogHtml(item.data, item.dateStr)).join("");
+        container.innerHTML = items.length === 0 ? `<p class="notif-empty-state">No notification history.</p>` : items.join("");
     });
 }
 
-// Repeat similar logic for initializeAdminLiveInflowFeed by calling createLogHtml
+function initializeAdminLiveInflowFeed() {
+    const adminContainer = document.getElementById("adminNotifContainer");
+    if(!adminContainer) return;
+
+    onSnapshot(systemNotifColl, (snapshot) => {
+        let sortedDocs = [];
+        snapshot.forEach(d => sortedDocs.push(d.data()));
+        sortedDocs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+        let items = [];
+        sortedDocs.forEach((data) => {
+            const dateStr = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleString() : new Date().toLocaleString();
+            
+            let accentBorder = "var(--accent-blue)";
+            if (data.type === "Blotter") accentBorder = "var(--semantic-pending)";
+            if (data.type === "Deletion Alert") accentBorder = "var(--semantic-danger)";
+            
+            items.push(`
+                <div class="log-item ${data.type === 'Blotter' ? 'blotter' : data.type === 'Deletion Alert' ? 'deletion' : 'success'}">
+                    <div class="log-content">
+                        <h4>${data.title}</h4>
+                        <p>${data.message}</p>
+                        <small style="color:var(--text-muted);">Action by: <strong>${data.updatedBy || 'Unknown'}</strong></small>
+                    </div>
+                    <span class="log-timestamp">${dateStr}</span>
+                </div>
+            `);
+        });
+        adminContainer.innerHTML = items.length === 0 ? `<p class="notif-empty-state">Awaiting incoming civilian transactions and filings...</p>` : items.join("");
+    });
+}
 
 // 1. Global variable to hold resident data
 let residentsCache = [];
