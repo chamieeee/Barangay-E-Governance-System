@@ -1,9 +1,5 @@
 /* ============================================================
    css variables / global colors
-   we define all our colors here as variables so if we ever
-   want to change a color, we only change it in ONE place
-   instead of hunting for it all over the file
-   think of these like named constants in javascript
    ============================================================ */
 :root {
     /* main brand colors - these give it that official government vibe */

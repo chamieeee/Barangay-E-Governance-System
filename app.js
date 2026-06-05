@@ -7,28 +7,10 @@
 // this is the main firebase thing, we need it to start everything
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 
-// these are all the firestore functions we'll be using throughout the whole code
-// - getFirestore = connects us to the database
-// - collection = points to a specific folder/group of data (like "document_requests")
-// - addDoc = adds a new record to a collection
-// - onSnapshot = listens to changes in real time, super useful!
-// - doc = points to one specific record using its id
-// - updateDoc = edits an existing record
-// - deleteDoc = permanently removes a record
-// - setDoc = creates or completely replaces a record (like addDoc but you control the id)
-// - getDoc = fetches one specific record just once (not real-time)
-// - query, where, orderBy = for filtering and sorting data
-// - serverTimestamp = lets firebase automatically save the current time
 import { 
     getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc, query, where, orderBy, serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// these handle everything related to logging in and out
-// - getAuth = gets the auth system ready
-// - createUserWithEmailAndPassword = for registering new accounts
-// - signInWithEmailAndPassword = for logging in
-// - signOut = for logging out
-// - onAuthStateChanged = watches if the user is logged in or not, runs every time it changes
 import { 
     getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
