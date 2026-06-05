@@ -1,123 +1,157 @@
-/* ==========================================================
-   OFFICIAL GOVERNMENT DIGITAL IDENTITY DESIGN FRAMEWORK
-   ========================================================== */
+/* ============================================================
+   css variables / global colors
+   we define all our colors here as variables so if we ever
+   want to change a color, we only change it in ONE place
+   instead of hunting for it all over the file
+   think of these like named constants in javascript
+   ============================================================ */
 :root {
-    /* Institutional Formal Colors */
-    --gov-navy-primary: #0b2240;    /* Deep Executive Blue */
-    --gov-blue-secondary: #1a365d;  /* Administrative Deep Blue */
-    --gov-gold-accent: #b45309;     /* Institutional Gold / Accent Seal */
-    --gov-bg-workspace: #f8fafc;    /* Clean Workspace Grey */
-    --text-primary: #0f172a;        /* High Contrast Slate Text */
-    --text-muted: #475569;          /* Medium Contrast Regulatory Labels */
-    --surface-white: #ffffff;
-    --border-formal: #cbd5e1;       /* Clean Structural Alignment Lines */
+    /* main brand colors - these give it that official government vibe */
+    --gov-navy-primary: #0b2240;    /* very dark navy blue, main color for the sidebar and headers */
+    --gov-blue-secondary: #1a365d;  /* a bit lighter than the navy, used for buttons and hover states */
+    --gov-gold-accent: #b45309;     /* gold/amber color, used for active borders and highlights */
+    --gov-bg-workspace: #f8fafc;    /* very light grey, this is the background of the whole page */
+    --text-primary: #0f172a;        /* almost black, used for regular text you want people to read */
+    --text-muted: #475569;          /* medium grey, for secondary text like timestamps and captions */
+    --surface-white: #ffffff;       /* pure white, used for cards and form backgrounds */
+    --border-formal: #cbd5e1;       /* light grey, used for dividers, table borders, input borders */
     
-    /* Strict Semantic Alerts */
-    --semantic-pending: #d97706;    /* Amber Caution State */
-    --semantic-success: #15803d;    /* Emerald Approved State */
-    --semantic-danger: #b91c1c;     /* Crimson Legal Enforcement State */
+    /* these colors show the status of a request or complaint at a glance */
+    --semantic-pending: #d97706;    /* orange = still waiting, hasn't been processed yet */
+    --semantic-success: #15803d;    /* green = done, approved, or resolved */
+    --semantic-danger: #b91c1c;     /* red = something was deleted, archived, or flagged */
 }
 
+/* we set the base font to 13px here instead of the default 16px
+   because the dashboard has a lot of content and 16px felt too big */
+html {
+    font-size: 13px;
+}
+
+/* this is a css reset - browsers apply their own default margins, paddings, 
+   and box sizing which can mess up our layout, so we zero everything out first
+   box-sizing: border-box means padding is included inside the element's width
+   (which is way easier to work with than the default behavior) */
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    /* use inter font first, then fall back to system fonts if inter isn't available */
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* the body is the root container for everything visible on the page */
 body {
-    background-color: var(--gov-bg-workspace);
-    color: var(--text-primary);
-    min-height: 100vh;
-    line-height: 1.5;
+    background-color: var(--gov-bg-workspace); /* light grey page background */
+    color: var(--text-primary);                /* default text color for everything */
+    min-height: 100vh;                          /* at least as tall as the screen */
+    line-height: 1.5;                           /* makes text easier to read */
 }
 
+/* utility class - we add this to any element we want to completely hide
+   !important makes sure it overrides any other display rules */
 .hidden { display: none !important; }
 
-/* SVG Icon Base Structure */
+/* base style for svg icons used throughout the app */
 .gov-icon {
     width: 1.25rem;
     height: 1.25rem;
-    fill: currentColor;
-    flex-shrink: 0;
+    fill: currentColor; /* inherits the text color of its parent element */
+    flex-shrink: 0;     /* prevents the icon from shrinking inside a flex container */
 }
+
+/* smaller icon version for when you want to put an icon next to text inline */
 .icon-inline {
     width: 1rem;
     height: 1rem;
-    vertical-align: middle;
-    margin-right: 0.35rem;
+    vertical-align: middle; /* aligns it with the middle of the text */
+    margin-right: 0.35rem;  /* small gap between icon and text */
 }
 
-/* ==========================================================
-   STRUCTURAL TWO-COLUMN SYSTEM LAYOUT
-   ========================================================== */
+
+/* ============================================================
+   page layout - sidebar + main content side by side
+   we use flexbox here to put the sidebar on the left
+   and the main content on the right
+   ============================================================ */
+
+/* the outermost wrapper that contains both the sidebar and the main content area */
 .app-layout {
-    display: flex;
-    min-height: 100vh;
+    display: flex;      /* puts children (sidebar + main) side by side */
+    min-height: 100vh;  /* makes sure it's at least as tall as the screen */
 }
 
-/* Left Institutional Sidebar Navigation */
+/* the left sidebar navigation panel */
 .sidebar-nav {
-    width: 280px;
-    background-color: var(--gov-navy-primary);
-    color: #f1f5f9;
+    width: 240px;                                /* fixed width so it doesn't stretch */
+    background-color: var(--gov-navy-primary);   /* dark navy background */
+    color: #f1f5f9;                              /* light text so it's readable on dark bg */
     display: flex;
-    flex-direction: column;
-    border-right: 2px solid var(--gov-gold-accent);
+    flex-direction: column;                      /* stack children vertically inside the sidebar */
+    border-right: 2px solid var(--gov-gold-accent); /* gold line on the right edge for style */
 }
 
+/* the very top of the sidebar where the logo and app name sit */
 .sidebar-brand {
-    padding: 1.5rem;
+    padding: 1rem;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    background-color: #07162b;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    justify-content: center;
+    gap: 0.65rem;             /* space between logo icon and text */
+    background-color: #07162b; /* slightly darker than the sidebar to stand out */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* subtle divider line */
 }
 
+/* the svg logo image inside the brand section */
 .brand-logo svg {
     width: 2.25rem;
     height: 2.25rem;
-    fill: var(--gov-gold-accent);
+    fill: var(--gov-gold-accent); /* gold fill to match the brand color */
 }
 
+/* the main app name text */
 .brand-text h1 {
     font-size: 0.95rem;
     font-weight: 800;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.05em; /* slight letter spacing for that "official" look */
     color: #ffffff;
 }
 
+/* the smaller tagline or subtitle below the app name */
 .brand-text p {
     font-size: 0.7rem;
-    text-transform: uppercase;
-    color: #94a3b8;
+    text-transform: uppercase; /* ALL CAPS for that formal look */
+    color: #94a3b8;            /* muted grey since it's secondary info */
     letter-spacing: 0.02em;
 }
 
+/* the scrollable section below the brand that holds the profile card and nav links */
 .sidebar-user-section {
     padding: 1.25rem;
-    flex-grow: 1;
+    flex-grow: 1; /* this makes it take up all remaining vertical space in the sidebar */
 }
 
+/* the small card inside the sidebar that shows who is currently logged in */
 .user-profile-card {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.05); /* very slightly lighter than the sidebar (5% white overlay) */
     padding: 0.85rem;
     border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1); /* subtle border */
+    margin-bottom: 1.5rem;  /* space below it before the nav links start */
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.25rem; /* small gap between username and role badge */
 }
 
+/* the username text inside the profile card */
 .username-display {
     font-size: 0.85rem;
     font-weight: 700;
     color: #ffffff;
-    word-break: break-all;
+    word-break: break-all; /* if the email is really long, break it onto the next line */
 }
 
+/* the small colored badge that shows if the user is Admin or Resident */
 .role-indicator-tag {
     font-size: 0.7rem;
     font-weight: 700;
@@ -126,64 +160,72 @@ body {
     padding: 0.15rem 0.4rem;
     border-radius: 2px;
     display: inline-block;
-    width: fit-content;
+    width: fit-content; /* only as wide as the text needs */
 }
+/* admin badge is red to make it stand out */
 .admin-tag { background-color: var(--semantic-danger); color: white; }
+/* resident badge is a lighter blue */
 .resident-tag { background-color: var(--gov-blue-secondary); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.2); }
 
-/* Sidebar Navigation Items */
+/* the nav menu that holds all the sidebar buttons */
 .sidebar-menu {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1.25rem; /* space between each nav group (like between admin section and a divider) */
 }
 
+/* a group of related nav links (we might have an "admin" group and a "resident" group) */
 .menu-group {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.25rem; /* smaller gap between individual buttons in the same group */
 }
 
+/* each individual nav button in the sidebar */
 .nav-link {
-    width: 100%;
-    background: none;
-    border: none;
-    color: #cbd5e1;
+    width: 100%;       /* full width of the sidebar */
+    background: none;  /* no background by default, just transparent */
+    border: none;      /* no border */
+    color: #cbd5e1;    /* light grey text */
     padding: 0.75rem 1rem;
-    text-align: left;
+    text-align: left;  /* buttons are centered by default so we need this */
     font-size: 0.85rem;
     font-weight: 500;
     border-radius: 4px;
-    cursor: pointer;
+    cursor: pointer;   /* shows a hand cursor so users know it's clickable */
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    transition: all 0.2s ease;
+    gap: 0.75rem;      /* space between the icon and the button text */
+    transition: all 0.2s ease; /* smooth color change on hover */
 }
 
+/* when hovering, make the button slightly brighter */
 .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.08); /* 8% white overlay */
     color: #ffffff;
 }
 
+/* the currently active nav button gets a gold left border to show where you are */
 .nav-link.active {
     background-color: var(--gov-blue-secondary);
     color: #ffffff;
     font-weight: 700;
-    border-left: 4px solid var(--gov-gold-accent);
-    border-radius: 0 4px 4px 0;
+    border-left: 4px solid var(--gov-gold-accent); /* this gold line is the highlight */
+    border-radius: 0 4px 4px 0; /* only round the right side corners */
 }
 
+/* the very bottom strip of the sidebar that holds the logout button */
 .sidebar-footer {
     padding: 1rem 1.25rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.1); /* thin line separating it from the nav links */
 }
 
+/* the logout button - red outline, no fill by default */
 .btn-logout {
     width: 100%;
     background-color: transparent;
-    border: 1px solid #ef4444;
-    color: #fca5a5;
+    border: 1px solid #ef4444; /* red border */
+    color: #fca5a5;            /* light pink text */
     padding: 0.6rem;
     font-size: 0.8rem;
     font-weight: 600;
@@ -196,50 +238,58 @@ body {
     transition: all 0.2s;
 }
 
+/* when hovering, fill the button solid red so it's clearly a danger action */
 .btn-logout:hover {
     background-color: #b91c1c;
     color: white;
 }
 
-/* Main Viewport Workspace Container */
+/* the big content area to the right of the sidebar */
 .main-viewport {
-    flex-grow: 1;
-    overflow-y: auto;
-    height: 100vh;
+    flex-grow: 1;       /* takes up all the remaining horizontal space */
+    overflow-y: auto;   /* scrollable if the content is longer than the screen */
+    height: 100vh;      /* exactly as tall as the screen */
 }
 
+/* a centered container inside the main viewport with some padding */
 .content-container {
-    padding: 2.5rem;
-    max-width: 1400px;
-    margin: 0 auto;
+    padding: 1.5rem;
+    max-width: 1400px; /* stops it from getting too wide on big screens */
+    margin: 0 auto;    /* centers it horizontally */
 }
 
-/* ==========================================================
-   FORMAL INSTITUTIONAL INTERFACE CARDS & COMMONS
-   ========================================================== */
+
+/* ============================================================
+   cards and reusable ui blocks
+   ============================================================ */
+
+/* a panel that stacks its child sections vertically with gaps between them */
 .dashboard-panel {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.5rem; /* space between sections */
 }
 
+/* the large heading at the top of each page section (like "Document Requests") */
 .panel-title {
     font-size: 1.5rem;
     font-weight: 800;
     color: var(--gov-navy-primary);
-    border-bottom: 2px solid var(--border-formal);
+    border-bottom: 2px solid var(--border-formal); /* underline effect */
     padding-bottom: 0.5rem;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.02em; /* slightly tighter letter spacing for headings looks better */
 }
 
+/* the white rounded box used to group related content on the page */
 .card {
     background: var(--surface-white);
     border: 1px solid var(--border-formal);
     border-radius: 4px;
     padding: 1.75rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* very subtle shadow to lift it off the page */
 }
 
+/* the heading text inside a card */
 .card h3 {
     font-size: 1.15rem;
     font-weight: 700;
@@ -247,28 +297,36 @@ body {
     margin-bottom: 0.35rem;
 }
 
+/* smaller grey text below a card heading - usually explains what the card is for */
 .card-subtitle {
     font-size: 0.85rem;
     color: var(--text-muted);
     margin-bottom: 1.5rem;
 }
 
-/* Regulatory Clean Form Frameworks */
+
+/* ============================================================
+   form styles - for the document request, complaint, and profile forms
+   ============================================================ */
+
+/* wraps each label + input pair so they stack vertically with a gap */
 .form-group {
     margin-bottom: 1.25rem;
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0.4rem; /* gap between the label and the input field below it */
 }
 
+/* the label that appears above each input field */
 .form-group label {
     font-size: 0.8rem;
     font-weight: 700;
-    text-transform: uppercase;
+    text-transform: uppercase; /* labels in ALL CAPS look more formal */
     letter-spacing: 0.03em;
     color: var(--gov-blue-secondary);
 }
 
+/* shared styles for text inputs, dropdowns, and text areas */
 .form-group input, 
 .form-group select, 
 .form-group textarea {
@@ -278,35 +336,38 @@ body {
     border-radius: 4px;
     background-color: #ffffff;
     color: var(--text-primary);
-    transition: border-color 0.15s;
+    transition: border-color 0.15s; /* smooth transition when the border changes color on focus */
 }
 
+/* when the user clicks on an input field, give it a blue border highlight */
 .form-group input:focus, 
 .form-group select:focus, 
 .form-group textarea:focus {
-    outline: none;
-    border-color: var(--gov-blue-secondary);
-    box-shadow: 0 0 0 2px rgba(26, 54, 93, 0.1);
+    outline: none; /* remove the default ugly blue browser outline */
+    border-color: var(--gov-blue-secondary); /* our own nicer border color */
+    box-shadow: 0 0 0 2px rgba(26, 54, 93, 0.1); /* subtle glow effect around the field */
 }
 
+/* makes certain form rows show two fields side by side instead of stacked */
 .form-row-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr; /* two equal columns */
     gap: 1.25rem;
 }
 
+/* a decorative gold text divider used to separate sections within a long form */
 .form-section-divider {
     font-size: 0.8rem;
     font-weight: 800;
-    color: var(--gov-gold-accent);
+    color: var(--gov-gold-accent); /* gold text */
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    border-bottom: 1px solid var(--border-formal);
+    border-bottom: 1px solid var(--border-formal); /* line underneath the text */
     padding-bottom: 0.25rem;
-    margin: 1.75rem 0 1.25rem 0;
+    margin: 1.75rem 0 1.25rem 0; /* extra space above and below to separate sections */
 }
 
-/* Formal Controls Buttons */
+/* the main action button (like "submit" or "save") */
 .btn-primary, .btn-submit {
     background-color: var(--gov-blue-secondary);
     color: #ffffff;
@@ -321,27 +382,30 @@ body {
     transition: background-color 0.2s;
 }
 
+/* gets darker when you hover to show it's clickable */
 .btn-primary:hover, .btn-submit:hover {
     background-color: var(--gov-navy-primary);
 }
 
+/* a red button variant for dangerous actions like deleting things */
 .btn-danger {
     background-color: var(--semantic-danger);
     border-color: #991b1b;
 }
 .btn-danger:hover {
-    background-color: #991b1b;
+    background-color: #991b1b; /* even darker red on hover */
 }
 
-/* Preference Alignment Checklist Toggles */
+/* a grey box that wraps the sms checkbox options in the forms */
 .preference-manual-box {
-    background: #f1f5f9;
+    background: #f1f5f9; /* light grey background to stand out from the white card */
     padding: 1.25rem;
     border-radius: 4px;
     border: 1px solid var(--border-formal);
     margin-bottom: 1.25rem;
 }
 
+/* the title inside the checkbox group (like "notification preferences") */
 .preference-manual-box h4 {
     font-size: 0.85rem;
     text-transform: uppercase;
@@ -349,25 +413,42 @@ body {
     margin-bottom: 0.75rem;
 }
 
+/* a checkbox + its label, laid out side by side */
 .checkbox-container {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.5rem; /* space between the checkbox box and the label text */
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--text-primary);
-    cursor: pointer;
+    cursor: pointer; /* makes clicking the label also toggle the checkbox */
 }
 
-/* ==========================================================
-   STATISTICAL OVERVIEW METRIC GRID CARDS
-   ========================================================== */
+/* adds a little gap between stacked checkboxes so they don't look cramped */
+.preference-manual-box .checkbox-container + .checkbox-container {
+    margin-top: 0.5rem;
+}
+
+/* makes the submit button inside auth forms (login/register) take up the full width */
+.auth-form .btn-primary {
+    margin-top: 1rem;
+    width: 100%;
+}
+
+
+/* ============================================================
+   stats / counter cards (the numbers at the top of the dashboard)
+   ============================================================ */
+
+/* the grid wrapper for all the stat cards at the top of the dashboard
+   auto-fill means it creates as many columns as fit, each at least 280px wide */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.25rem;
 }
 
+/* each individual stat card (like "total residents: 25") */
 .stat-metric-card {
     background: var(--surface-white);
     border: 1px solid var(--border-formal);
@@ -376,94 +457,108 @@ body {
     box-shadow: 0 1px 2px rgba(0,0,0,0.02);
 }
 
+/* the small text above the number, like "total residents" */
 .metric-label {
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--text-muted);
+    color: var(--text-muted); /* grey because it's secondary text */
     margin-bottom: 0.25rem;
 }
 
+/* the actual big number on each stat card */
 .metric-counter {
-    font-size: 2rem;
+    font-size: 2rem;  /* big so it stands out at a glance */
     font-weight: 800;
     color: var(--gov-navy-primary);
-    line-height: 1.1;
+    line-height: 1.1; /* tighter line height because it's a single number */
 }
 
-/* Price Assessment Summary Box */
+/* the yellow box that shows the processing fee for the selected document type */
 .price-display-box {
-    background-color: #fef3c7;
+    background-color: #fef3c7; /* light yellow */
     border: 1px solid #f59e0b;
     padding: 1rem;
     border-radius: 4px;
     margin-bottom: 1.25rem;
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between; /* puts the label on the left and price on the right */
     align-items: center;
 }
 
+/* "processing fee:" label on the left side of the price box */
 .price-label {
     font-size: 0.85rem;
     font-weight: 700;
-    color: #92400e;
+    color: #92400e; /* dark amber to match the yellow box */
 }
 
+/* the actual peso amount shown on the right side of the price box */
 .price-value {
     font-size: 1.25rem;
     font-weight: 800;
-    color: #78350f;
+    color: #78350f; /* even darker amber for emphasis */
 }
 
-/* ==========================================================
-   OFFICIAL BULLETINS & ANNOUNCEMENTS LAYOUTS
-   ========================================================== */
+
+/* ============================================================
+   announcements / bulletin board section
+   ============================================================ */
+
+/* the outer white box that wraps the entire bulletin board */
 .announcement-board-wrapper {
     background: var(--surface-white);
     border: 1px solid var(--border-formal);
     border-radius: 4px;
-    overflow: hidden;
+    overflow: hidden; /* hides any content that goes outside the rounded corners */
 }
 
+/* the dark navy header bar at the very top of the bulletin board */
 .board-header {
     background-color: var(--gov-navy-primary);
     color: #ffffff;
     padding: 1.25rem 1.5rem;
 }
 
+/* the main title text inside the header (like "official bulletin board") */
 .board-title {
     font-size: 1.1rem;
     font-weight: 800;
     letter-spacing: 0.02em;
 }
 
+/* the smaller subtitle below the board title */
 .board-subtitle {
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: #94a3b8; /* muted light grey since it's secondary info */
 }
 
+/* the scrollable area that holds all the announcement cards */
 .board-body-scroll {
-    max-height: 600px;
-    overflow-y: auto;
+    max-height: 600px;  /* stops it from taking over the whole page */
+    overflow-y: auto;   /* adds a scrollbar when there are too many announcements */
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
-    background: #f1f5f9;
+    gap: 1.5rem;           /* space between announcement cards */
+    background: #f1f5f9;   /* light grey background to distinguish from white cards */
 }
 
+/* each individual announcement card in the board */
 .memo-document-card {
     background: var(--surface-white);
     border: 1px solid var(--border-formal);
-    border-top: 4px solid var(--gov-gold-accent);
+    border-top: 4px solid var(--gov-gold-accent); /* thick gold line at the top for that official memo look */
     padding: 1.5rem;
     border-radius: 4px;
 }
 
+/* the metadata strip at the top of each announcement card
+   shows who posted it and what type of announcement it is */
 .memo-meta-strip {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between; /* issuer on left, date/type on right */
     font-size: 0.7rem;
     font-weight: 700;
     color: var(--text-muted);
@@ -474,6 +569,7 @@ body {
     letter-spacing: 0.02em;
 }
 
+/* the main heading/title of the announcement */
 .memo-header-headline {
     font-size: 1.1rem;
     font-weight: 800;
@@ -481,30 +577,37 @@ body {
     margin-bottom: 0.75rem;
 }
 
+/* the actual content/body text of the announcement */
 .memo-body-narrative {
     font-size: 0.92rem;
     color: #334155;
-    white-space: pre-wrap;
+    white-space: pre-wrap; /* respects newlines typed in the textarea - don't remove this! */
 }
 
+/* the toolbar that appears at the bottom of each announcement card in the admin view
+   holds the edit and delete buttons */
 .memo-control-toolbar {
     margin-top: 1.25rem;
     padding-top: 0.75rem;
-    border-top: 1px dashed var(--border-formal);
+    border-top: 1px dashed var(--border-formal); /* dashed line to visually separate from the content */
     display: flex;
     gap: 0.5rem;
 }
 
-/* ==========================================================
-   GOVERNMENT COMPLIANT REGULATORY DATA TABLES
-   ========================================================== */
+
+/* ============================================================
+   data tables (document requests, complaints, archive, residents)
+   ============================================================ */
+
+/* a white card wrapper around each table */
 .table-card {
     background: var(--surface-white);
     border: 1px solid var(--border-formal);
     border-radius: 4px;
-    overflow: hidden;
+    overflow: hidden; /* clips rounded corners properly */
 }
 
+/* the grey bar above a table that holds the table title */
 .table-header-flex {
     padding: 1.25rem 1.5rem;
     background-color: #f8fafc;
@@ -517,17 +620,21 @@ body {
     color: var(--gov-navy-primary);
 }
 
+/* allows a table to scroll horizontally on small screens
+   so columns don't get squished */
 .table-responsive-wrapper {
     overflow-x: auto;
 }
 
+/* base styles for all tables */
 table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: collapse; /* removes the double borders between cells */
     text-align: left;
     font-size: 0.85rem;
 }
 
+/* table header cells (the row of column titles) */
 th {
     background-color: #f1f5f9;
     color: var(--gov-blue-secondary);
@@ -535,21 +642,23 @@ th {
     text-transform: uppercase;
     letter-spacing: 0.03em;
     padding: 0.85rem 1rem;
-    border-bottom: 2px solid var(--border-formal);
+    border-bottom: 2px solid var(--border-formal); /* thicker bottom border to separate headers from rows */
 }
 
+/* regular table data cells */
 td {
     padding: 1rem;
-    border-bottom: 1px solid var(--border-formal);
+    border-bottom: 1px solid var(--border-formal); /* thin line under each row */
     color: var(--text-primary);
-    vertical-align: top;
+    vertical-align: top; /* align content to the top if a cell has multiple lines */
 }
 
+/* subtle grey highlight when hovering over a table row so you can track it */
 tr:hover td {
     background-color: #f8fafc;
 }
 
-/* Formal Structural Badges */
+/* the small colored pill/badge that shows a record's status */
 .status-badge {
     font-size: 0.7rem;
     font-weight: 800;
@@ -559,11 +668,16 @@ tr:hover td {
     display: inline-block;
     letter-spacing: 0.02em;
 }
+/* yellow badge = still waiting / not processed yet */
 .status-pending { background-color: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+/* green badge = approved or ready for pickup */
 .status-approved { background-color: #dcfce7; color: #166534; border: 1px solid #22c55e; }
+/* blue badge = complaint was resolved */
 .status-resolved { background-color: #e0f2fe; color: #0369a1; border: 1px solid #38bdf8; }
+/* red badge = record was archived (soft deleted) */
 .status-archived { background-color: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
 
+/* the small buttons inside table rows (like "approve" and "archive") */
 .action-btn {
     padding: 0.35rem 0.65rem;
     font-size: 0.75rem;
@@ -575,21 +689,32 @@ tr:hover td {
     border-radius: 3px;
     transition: all 0.15s;
 }
-.action-btn:hover { background-color: #f1f5f9; }
+.action-btn:hover { background-color: #f1f5f9; } /* slight grey on hover for default buttons */
+
+/* the green "approve" button in the document requests table */
 .btn-approve { background-color: var(--semantic-success); color: white; border-color: #166534; }
-.btn-approve:hover { background-color: #166534; }
+.btn-approve:hover { background-color: #166534; } /* darker green on hover */
+
+/* the blue "resolve case" button in the complaints table */
 .btn-resolve { background-color: #0284c7; color: white; border-color: #0369a1; }
 .btn-resolve:hover { background-color: #0369a1; }
+
+/* the grey "archive" button (appears in both tables) */
 .btn-archive { background-color: #64748b; color: white; border-color: #475569; }
 .btn-archive:hover { background-color: #475569; }
 
-/* ==========================================================
-   NOTIFICATION SYSTEM FEED CHANNELS
-   ========================================================== */
+
+/* ============================================================
+   notifications feed
+   ============================================================ */
+
+/* the white outer container that wraps the notifications list */
 .notification-panel {
     background: var(--surface-white);
     border: 1px solid var(--border-formal);
 }
+
+/* the header bar at the top of the notifications panel */
 .notif-header {
     padding: 1.25rem 1.5rem;
     border-bottom: 1px solid var(--border-formal);
@@ -597,27 +722,33 @@ tr:hover td {
     justify-content: space-between;
     align-items: center;
 }
+
+/* the scrollable area that contains all the notification items */
 .notif-list-wrapper {
     padding: 1rem;
-    max-height: 500px;
-    overflow-y: auto;
+    max-height: 500px; /* stops it from getting too tall */
+    overflow-y: auto;  /* scrollable */
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
+
+/* shown in the center when there are no notifications yet */
 .notif-empty-state {
     text-align: center;
     padding: 2rem;
     font-size: 0.85rem;
     color: var(--text-muted);
 }
+
+/* the small timestamp shown on each notification */
 .notif-timestamp-badge {
     font-size: 0.7rem;
     font-weight: 600;
     color: var(--text-muted);
 }
 
-/* Replace old notif-item style to enforce consistent borders */
+/* each individual notification row/item */
 .notif-item {
     padding: 1rem;
     margin-bottom: 0.5rem;
@@ -625,34 +756,32 @@ tr:hover td {
     border-radius: 4px;
     display: flex;
     align-items: center;
-    border-left: 4px solid var(--gov-navy-primary); /* Default base border */
+    border-left: 4px solid var(--gov-navy-primary); /* blue by default */
 }
 
-/* Specific border colors for notification types */
+/* change the left border color based on what kind of notification it is
+   blotter = complaint related (orange)
+   deletion = something was archived/deleted (red)
+   document = doc request update (blue) */
 .notif-item[data-type="Blotter"] { border-left-color: var(--semantic-pending); }
 .notif-item[data-type="Deletion Alert"] { border-left-color: var(--semantic-danger); }
 .notif-item[data-type="Document"] { border-left-color: var(--accent-blue); }
 
-/* ==========================================================
-   AUTHENTICATION MODULE INTERFACE ARCHITECTURE
-   ========================================================== */
-.auth-card {
-    max-width: 520px;
-    margin: 4rem auto;
-    background: var(--surface-white);
-    border: 1px solid var(--border-formal);
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-    border-top: 4px solid var(--gov-navy-primary);
-    border-radius: 4px;
-    overflow: hidden;
-}
+
+/* ============================================================
+   login and register page
+   ============================================================ */
+
+/* the two tab buttons at the top of the login card (login / register) */
 .auth-tabs {
     display: flex;
     background-color: #f8fafc;
     border-bottom: 1px solid var(--border-formal);
 }
+
+/* each tab button - they share the width equally using flex: 1 */
 .tab-btn {
-    flex: 1;
+    flex: 1; /* both tabs get exactly half the width */
     padding: 1rem;
     background: none;
     border: none;
@@ -663,59 +792,87 @@ tr:hover td {
     cursor: pointer;
     transition: all 0.2s;
 }
+
+/* the currently selected tab is white with a gold underline */
 .tab-btn.active {
     background-color: #ffffff;
     color: var(--gov-navy-primary);
-    border-bottom: 2px solid var(--gov-gold-accent);
-}
-.auth-form {
-    padding: 2rem;
+    border-bottom: 2px solid var(--gov-gold-accent); /* gold underline = this tab is active */
 }
 
-/* ==========================================================
-   MODAL WINDOW DIALOG TERMINAL LAYER
-   ========================================================== */
-.modal-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(2px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
+/* padding inside the form part of the auth card */
+.auth-form {
+    padding: 1.25rem 1.5rem 1.5rem;
 }
+
+
+/* ============================================================
+   qr code popup / modal
+   this appears when the user picks gcash as their payment method
+   ============================================================ */
+
+/* the dark semi-transparent background that covers the whole screen
+   behind the popup - clicking through it is blocked */
+.modal-overlay {
+    position: fixed;  /* sticks to the screen even when you scroll */
+    top: 0; left: 0; width: 100%; height: 100%; /* covers the whole viewport */
+    background-color: rgba(15, 23, 42, 0.6);    /* dark with 60% opacity */
+    backdrop-filter: blur(2px);                  /* blurs whatever is behind the overlay */
+    display: flex;
+    align-items: center;     /* vertically centers the popup */
+    justify-content: center; /* horizontally centers the popup */
+    z-index: 9999;           /* very high z-index so it sits on top of everything */
+}
+
+/* the actual white popup box */
 .modal-surface {
     background: var(--surface-white);
     border: 2px solid var(--gov-navy-primary);
     width: 100%;
-    max-width: 480px;
-    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    max-width: 480px; /* don't let it get too wide */
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); /* drop shadow to lift it off the screen */
     border-radius: 4px;
     overflow: hidden;
 }
+
+/* the dark navy header bar at the top of the modal */
 .modal-header {
     background-color: var(--gov-navy-primary);
     color: #ffffff;
     padding: 1rem 1.25rem;
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between; /* title on left, X button on right */
     align-items: center;
 }
 .modal-header h3 { font-size: 1rem; font-weight: 700; color: #ffffff; }
-.modal-close-x { background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; }
-.modal-close-x:hover { color: #ffffff; }
-.modal-body { padding: 1.5rem; text-align: center; }
-.qr-container img { max-width: 220px; margin: 1rem auto; display: block; border: 1px solid var(--border-formal); padding: 0.5rem; }
 
+/* the X close button in the top right of the modal */
+.modal-close-x { background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; }
+.modal-close-x:hover { color: #ffffff; } /* turns white when hovered */
+
+/* the body/content area inside the modal */
+.modal-body { padding: 1.5rem; text-align: center; }
+
+/* the actual qr code image */
+.qr-container img { 
+    max-width: 220px;
+    margin: 1rem auto;
+    display: block;
+    border: 1px solid var(--border-formal);
+    padding: 0.5rem; /* small white frame around the qr code */
+}
+
+/* makes a table horizontally scrollable (used in several places) */
 .table-responsive-wrapper {
     overflow-x: auto;
 }
 
+/* grey hover effect for the residents table specifically */
 #residentsTableBody tr:hover {
     background-color: #f8fafc;
 }
 
+/* small grey badge showing a user's role in the residents table */
 .role-tag {
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
@@ -723,6 +880,7 @@ tr:hover td {
     background: #e2e8f0;
 }
 
+/* a full width table with collapsed borders used for the residents list */
 .official-table {
     width: 100%;
     border-collapse: collapse;
@@ -734,14 +892,16 @@ tr:hover td {
     text-align: left;
 }
 .official-table th {
-    background-color: var(--gov-navy-primary);
+    background-color: var(--gov-navy-primary); /* dark navy header row */
     color: white;
 }
 
+/* another horizontal scroll wrapper (in case we need it in more places) */
 .table-responsive {
     overflow-x: auto;
 }
 
+/* general purpose data table used in some sections */
 .data-table {
     width: 100%;
     border-collapse: collapse;
@@ -749,6 +909,7 @@ tr:hover td {
     font-size: 0.9rem;
 }
 
+/* data-table header cells */
 .data-table th {
     text-align: left;
     background-color: var(--gov-bg-workspace);
@@ -759,11 +920,13 @@ tr:hover td {
     font-size: 0.75rem;
 }
 
+/* data-table data cells */
 .data-table td {
     padding: 0.75rem;
     border-bottom: 1px solid var(--border-formal);
 }
 
+/* the search input box above the residents table */
 .search-input {
     padding: 0.5rem;
     border: 1px solid var(--border-formal);
@@ -771,57 +934,24 @@ tr:hover td {
     width: 300px;
 }
 
+/* a generic status badge with green as default
+   this gets overridden by the more specific classes like .status-pending */
 .status-badge {
     padding: 0.25rem 0.5rem;
-    background: #dcfce7;
+    background: #dcfce7; /* green */
     color: #166534;
     border-radius: 12px;
     font-size: 0.75rem;
     font-weight: 600;
 }
 
-/* --- ACCESSIBILITY & LOG DESIGN ENHANCEMENTS --- */
 
-/* Uniform log/notification item container */
-.log-item {
-    background: var(--surface-white);
-    border: 1px solid var(--border-formal);
-    border-radius: 6px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    /* Added subtle left border stripe */
-    border-left: 6px solid var(--gov-blue-secondary); 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
+/* ============================================================
+   log / notification card items
+   these are the individual cards inside the notifications feed
+   ============================================================ */
 
-/* Specific status-colored stripes */
-.log-item.pending { border-left-color: var(--semantic-pending); }
-.log-item.success { border-left-color: var(--semantic-success); }
-.log-item.danger { border-left-color: var(--semantic-danger); }
-
-/* Improved Typography for 60+ Accessibility */
-.log-content h4 {
-    font-size: 1.1rem;
-    color: var(--gov-navy-primary);
-    margin-bottom: 0.5rem;
-}
-
-.log-content p {
-    font-size: 0.95rem; /* Larger text */
-    line-height: 1.6;
-    color: var(--text-primary);
-}
-
-/* Ensure consistent button sizes */
-button {
-    font-size: 0.9rem !important; /* Easier to read and click */
-    padding: 0.75rem 1rem !important;
-}
-
-/* Standardized Log/Notification Item */
+/* each notification card in the feed */
 .log-item {
     background: var(--surface-white);
     border: 1px solid var(--border-formal);
@@ -829,101 +959,117 @@ button {
     padding: 1.25rem;
     margin-bottom: 0.75rem;
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between; /* message on left, timestamp on right */
     align-items: flex-start;
-    border-left: 6px solid var(--gov-navy-primary); /* Default official accent */
+    border-left: 6px solid var(--gov-navy-primary); /* thick colored left border (default blue) */
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-/* Status-specific left borders */
-.log-item.blotter { border-left-color: var(--semantic-pending); }
-.log-item.deletion { border-left-color: var(--semantic-danger); }
-.log-item.success { border-left-color: var(--semantic-success); }
+/* change the thick left border color based on the type of notification */
+.log-item.blotter { border-left-color: var(--semantic-pending); }  /* orange for complaint-related */
+.log-item.deletion { border-left-color: var(--semantic-danger); }  /* red for deletions/archives */
+.log-item.success { border-left-color: var(--semantic-success); }  /* green for approvals and good news */
 
+/* the title text of the notification */
 .log-content h4 {
     font-size: 1.05rem;
     color: var(--gov-navy-primary);
     margin-bottom: 0.25rem;
 }
 
+/* the message/description below the title */
 .log-content p {
     font-size: 0.95rem;
     color: var(--text-primary);
     line-height: 1.5;
 }
 
+/* the date and time shown on the right side of each notification card */
 .log-timestamp {
     font-size: 0.8rem;
     color: var(--text-muted);
     font-weight: 600;
-    white-space: nowrap;
-    margin-left: 1rem;
+    white-space: nowrap; /* prevents the date from wrapping to a new line */
+    margin-left: 1rem;   /* gap between the message and the timestamp */
 }
 
-/* --- TOP BRANDING HEADER --- */
+
+/* ============================================================
+   login page header (the logo and title shown above the login card)
+   ============================================================ */
+
+/* the header area above the login/register card that shows the system logo */
 .auth-header-container {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: center;    /* centers logo and text horizontally */
     justify-content: center;
-    padding: 2.5rem 1rem;
+    padding: 1.5rem 1rem;
     text-align: center;
     background: var(--surface-white);
-    border-bottom: 2px solid var(--gov-navy-primary);
-    margin-bottom: 2rem;
+    border-bottom: 2px solid var(--gov-navy-primary); /* navy underline separates it from the card */
+    margin-bottom: 0;
 }
 
+/* the large government seal / logo icon on the login page */
 .auth-gov-icon {
-    width: 72px; /* Increased size for accessibility */
-    height: 72px;
-    fill: var(--gov-navy-primary);
-    margin-bottom: 1rem;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 0.75rem;
 }
 
+/* the main system title shown on the login page */
 .auth-page-title {
-    font-size: 2.5rem; /* Larger, readable title */
+    font-size: 1.4rem;
     color: var(--gov-navy-primary);
     text-transform: uppercase;
     font-weight: 800;
     letter-spacing: 1px;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 }
 
+/* the smaller subtitle under the title on the login page */
 .auth-subtitle {
-    font-size: 1.25rem; /* Readable font for 60+ users */
+    font-size: 0.8rem;
     color: var(--text-muted);
 }
 
-/* Constrain the auth area for better readability */
+/* the login / register card container */
 .auth-card {
-    max-width: 600px;
-    margin: 2rem auto; /* Centers the card */
-    padding: 0 1rem;
+    width: 90%;
+    max-width: 420px;     /* don't stretch too wide */
+    margin: 2rem auto;    /* centers the card and adds vertical space */
+    background: var(--surface-white);
+    border: 1px solid var(--border-formal);
+    border-top: 4px solid var(--gov-navy-primary); /* thick navy top border for visual weight */
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08); /* light shadow to lift it off the page */
+    overflow: hidden; /* clips the rounded corners nicely */
 }
 
-/* Hide sidebar when on the auth page */
+/* a smaller icon used in the dashboard header area */
+.dashboard-gov-icon {
+    width: 36px;
+    height: 36px;
+    fill: var(--gov-navy-primary);
+    margin-bottom: 0;
+    flex-shrink: 0; /* don't shrink in flex containers */
+}
+
+/* on the login page (auth-mode), the sidebar shouldn't be visible
+   since the user hasn't logged in yet and there's nothing to navigate */
 body.auth-mode .sidebar-nav {
     display: none !important;
 }
 
-/* Ensure the auth-card takes up the full width when sidebar is gone */
+/* on the login page, make the content fill the entire screen width
+   since there's no sidebar taking up space on the left */
 body.auth-mode .app-layout {
     grid-template-columns: 1fr !important;
 }
 
-/* Center the card perfectly */
-.auth-card {
-    max-width: 600px;
-    margin: 4rem auto; /* Creates space from top */
-    padding: 2rem;
-    background: var(--surface-white);
-    border: 1px solid var(--border-formal);
-    border-radius: 8px;
-}
-
-/* Center the login/register card */
-body.auth-mode #authSection {
-    max-width: 600px;
-    margin: 2rem auto;
-    padding: 2rem;
+/* force input and select to inherit the font size we set globally
+   browsers sometimes override this with their own default so we force it */
+input, select {
+    font-size: inherit !important;
 }
