@@ -1,8 +1,6 @@
-// ============================================================
 // importing stuff from firebase
 // basically we can't use firebase without importing these first,
 // think of it like getting supplies before starting a project
-// ============================================================
 
 // this is the main firebase thing, we need it to start everything
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -15,12 +13,9 @@ import {
     getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-
-// ============================================================
 // firebase config / setup
 // this is basically the address and password to our firebase project
 // you get this from the firebase console when you create a project
-// ============================================================
 
 // don't touch these keys, they're what connects our app to the right firebase project
 const firebaseConfig = {
@@ -42,7 +37,6 @@ const db = getFirestore(app);
 // get the auth system ready so we can log users in and out
 const auth = getAuth(app);
 
-// ============================================================
 // EmailJS setup - used to send automatic email notifications
 // to residents when their request or report status is updated.
 //
@@ -58,7 +52,6 @@ const auth = getAuth(app);
 //      Copy the Template ID.
 //   4. Go to Account → API Keys → copy your Public Key
 //   5. Replace the three placeholder strings below with your real values.
-// ============================================================
 const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";   // e.g. "service_abc123"
 const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";  // e.g. "template_xyz789"
 const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";   // e.g. "abcDEFghiJKL"
@@ -133,10 +126,8 @@ let currentCachedUserRole = "Resident";
 let activeDashboardStatsUnsubscribers = [];
 
 
-/* ============================================================
-   part 1 - handling login, logout, and page redirecting
-   this is the first thing that runs when the page loads
-   ============================================================ */
+/* part 1 - handling login, logout, and page redirecting
+   this is the first thing that runs when the page loads */
 
 // we use these to check which page we're currently on
 // !! converts the result to true/false (true = element exists on this page)
@@ -381,10 +372,8 @@ function navigateToPage(targetPageId) {
 }
 
 
-/* ============================================================
-   part 2 - dashboard stat counters (the cards at the top)
-   these numbers update automatically whenever the database changes
-   ============================================================ */
+/* part 2 - dashboard stat counters (the cards at the top)
+   these numbers update automatically whenever the database changes */
 
 // this sets up the live counters at the top of the dashboard
 // admins see different stats than residents, so we check the role first
@@ -536,9 +525,7 @@ function updateFormPriceDisplay() {
 }
 
 
-/* ============================================================
-   part 3 - register, login, logout, and profile stuff
-   ============================================================ */
+/* part 3 - register, login, logout, and profile stuff */
 
 // this handles the register form submission
 // async because we need to wait for firebase to create the account
@@ -675,9 +662,7 @@ async function handleProfileUpdateSubmit(e) {
 }
 
 
-/* ============================================================
-   part 4 - form submissions (document request and complaint)
-   ============================================================ */
+/* part 4 - form submissions (document request and complaint) */
 
 // handles submitting a new document request
 async function handleDocSubmit(e) {
@@ -796,11 +781,9 @@ async function handleAnnouncementSubmit(e) {
 }
 
 
-/* ============================================================
-   part 5 - real-time tables for document requests and complaints
+/* part 5 - real-time tables for document requests and complaints
    these tables listen to the database and update themselves automatically
-   no need to refresh the page!
-   ============================================================ */
+   no need to refresh the page! */
 
 // this function sets up the two main data tables (documents and complaints)
 // both use onSnapshot so they update live whenever firestore data changes
@@ -1049,12 +1032,10 @@ function initializeDataPipelineMonitors() {
 }
 
 
-/* ============================================================
-   part 6 - button actions (approve, resolve, archive)
+/* part 6 - button actions (approve, resolve, archive)
    instead of attaching listeners to each button individually,
    we use one listener on the whole document and check what was clicked
-   this works even for buttons that are added dynamically to the page
-   ============================================================ */
+   this works even for buttons that are added dynamically to the page */
 
 document.addEventListener("click", async (e) => {
     // get the current admin's email to record who made the change
@@ -1205,11 +1186,9 @@ document.addEventListener("click", async (e) => {
 });
 
 
-/* ============================================================
-   part 7 - bulletin board / announcements section
+/* part 7 - bulletin board / announcements section
    shows a list of announcements to residents (read-only)
-   and to admins (with edit and delete buttons)
-   ============================================================ */
+   and to admins (with edit and delete buttons) */
 
 // loads all announcements from firestore and displays them in real time
 function initializeLiveBulletinBoard() {
@@ -1361,17 +1340,13 @@ function escapeHtmlText(text) {
 }
 
 
-/* ============================================================
-   part 8 - notifications feed
+/* part 8 - notifications feed
    residents only see their own + broadcast notifications
-   admins see literally everything in the system
-   ============================================================ */
+   admins see literally everything in the system */
 
-// ============================================================
 // RESIDENT FILING TRACKING LOG - EXPANDED SYSTEM
 // Tab A: own document requests + blotter reports with live statuses
 // Tab B: community feed of all residents' submissions (no private data)
-// ============================================================
 
 // global function exposed so the HTML onclick can call it
 // residents only have one tab now (their own filings), so this is kept for compatibility
@@ -1504,10 +1479,8 @@ function initializeAdminLiveInflowFeed() {
 }
 
 
-/* ============================================================
-   part 9 - registered residents table (only visible to admins)
-   shows a searchable list of all users in the system
-   ============================================================ */
+/* part 9 - registered residents table (only visible to admins)
+   shows a searchable list of all users in the system */
 
 // this temporarily stores the residents list so we can filter it without re-fetching
 // every time the admin types in the search box, we filter this array instead of calling firestore again
