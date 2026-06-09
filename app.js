@@ -42,6 +42,61 @@ const db = getFirestore(app);
 // get the auth system ready so we can log users in and out
 const auth = getAuth(app);
 
+// ============================================================
+// EmailJS setup - used to send automatic email notifications
+// to residents when their request or report status is updated.
+//
+// HOW TO SET THIS UP:
+//   1. Go to https://www.emailjs.com and create a free account
+//   2. Add an Email Service (Gmail recommended) → copy the Service ID
+//   3. Create an Email Template with these variables:
+//        {{to_email}}   - recipient's email address
+//        {{to_name}}    - recipient's name
+//        {{subject}}    - email subject line
+//        {{message}}    - the status update message body
+//        {{updated_by}} - which admin processed the update
+//      Copy the Template ID.
+//   4. Go to Account → API Keys → copy your Public Key
+//   5. Replace the three placeholder strings below with your real values.
+// ============================================================
+const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";   // e.g. "service_abc123"
+const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";  // e.g. "template_xyz789"
+const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";   // e.g. "abcDEFghiJKL"
+
+// initialize EmailJS with your public key (must run before any emailjs.send() call)
+if (typeof emailjs !== "undefined") {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+}
+
+// sends a status-update email to a resident if they opted in to email notifications.
+// call this inside any approve / resolve / archive handler after the firestore update.
+//   recipientEmail - the resident's registered email address
+//   recipientName  - their full name (shown in the greeting)
+//   subject        - email subject line (e.g. "Your Barangay Clearance is Ready")
+//   message        - the body text describing what changed
+//   updatedBy      - admin email or "System" to credit who made the change
+async function sendStatusUpdateEmail(recipientEmail, recipientName, subject, message, updatedBy) {
+    if (typeof emailjs === "undefined") {
+        console.warn("EmailJS SDK not loaded — skipping email send.");
+        return;
+    }
+    if (!recipientEmail || recipientEmail === "anonymous@domain.com") return;
+
+    try {
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+            to_email:   recipientEmail,
+            to_name:    recipientName || recipientEmail,
+            subject:    subject,
+            message:    message,
+            updated_by: updatedBy || "Barangay Staff"
+        });
+        console.log(`Email notification sent to ${recipientEmail}`);
+    } catch (err) {
+        // log the error but don't crash the app — email is a bonus notification
+        console.error("EmailJS send failed:", err);
+    }
+}
+
 // these are basically shortcuts to the different "folders" in our database
 // instead of typing collection(db, "document_requests") every single time,
 // we save it to a variable so we can just write docRequestColl
@@ -649,8 +704,9 @@ async function handleDocSubmit(e) {
             status: "Pending", // all new requests start as pending
             updatedBy: "System (Initialization)", // no admin has touched it yet
             timestamp: serverTimestamp(), // firebase auto-fills the current time
-            prefSmsNotification: document.getElementById("docNotifSms").checked, // did they check the sms box?
-            smsContactNumber: document.getElementById("docNotifSms").checked ? document.getElementById("docSmsNumber").value : "N/A"
+            prefSmsNotification: document.getElementById("docNotifSms").checked,
+            smsContactNumber: document.getElementById("docNotifSms").checked ? document.getElementById("docSmsNumber").value : "N/A",
+            prefEmailNotification: document.getElementById("docNotifEmail").checked
         });
 
         // also send a notification to all residents so they know a new request came in
@@ -687,7 +743,8 @@ async function handleComplaintSubmit(e) {
             updatedBy: "System (Initialization)",
             timestamp: serverTimestamp(),
             prefSmsNotification: document.getElementById("complaintNotifSms").checked,
-            smsContactNumber: document.getElementById("complaintNotifSms").checked ? document.getElementById("complaintSmsNumber").value : "N/A"
+            smsContactNumber: document.getElementById("complaintNotifSms").checked ? document.getElementById("complaintSmsNumber").value : "N/A",
+            prefEmailNotification: document.getElementById("complaintNotifEmail").checked
         });
 
         // send a notification to everyone about the new complaint
@@ -874,13 +931,17 @@ function initializeDataPipelineMonitors() {
         data.forEach(({ item, id }) => {
             const currentStatus = item.status || "Pending";
             let badgeClass = currentStatus.toLowerCase() === "ready for pickup" ? "status-approved" : "status-pending";
+            const hasSmNumber = item.smsContactNumber && item.smsContactNumber !== "N/A";
+            const smsLine = hasSmNumber
+                ? `<br><small style="color:var(--semantic-success); font-weight:600;">📱 SMS: ${escapeHtmlText(item.smsContactNumber)}</small>`
+                : `<br><small style="color:var(--text-muted);">📵 No SMS requested</small>`;
             const tr = document.createElement("tr");
             tr.innerHTML = `
-                <td><strong>${item.fullName}</strong><br><small>${item.userEmail}</small></td>
-                <td><span style="color:#1d4ed8; font-weight:700;">${item.documentType}</span></td>
-                <td>"${item.purpose}"</td>
+                <td><strong>${escapeHtmlText(item.fullName)}</strong><br><small>${escapeHtmlText(item.userEmail)}</small>${smsLine}</td>
+                <td><span style="color:#1d4ed8; font-weight:700;">${escapeHtmlText(item.documentType)}</span></td>
+                <td>"${escapeHtmlText(item.purpose)}"</td>
                 <td><span class="status-badge ${badgeClass}">${currentStatus}</span></td>
-                <td><small style="color:var(--text-muted); font-weight:600;">${item.updatedBy || 'N/A'}</small></td>
+                <td><small style="color:var(--text-muted); font-weight:600;">${escapeHtmlText(item.updatedBy || 'N/A')}</small></td>
                 <td>
                     ${currentStatus.toLowerCase() === 'pending' ? `<button class="action-btn btn-approve" data-id="${id}">Approve</button>` : ''}
                     <button class="action-btn btn-archive" data-coll="document_requests" data-id="${id}">Archive</button>
@@ -904,13 +965,17 @@ function initializeDataPipelineMonitors() {
         data.forEach(({ item, id }) => {
             const currentStatus = item.status || "Pending";
             let badgeClass = currentStatus.toLowerCase() === "resolved case" ? "status-resolved" : "status-pending";
+            const hasSmNumber = item.smsContactNumber && item.smsContactNumber !== "N/A";
+            const smsLine = hasSmNumber
+                ? `<br><small style="color:var(--semantic-success); font-weight:600;">📱 SMS: ${escapeHtmlText(item.smsContactNumber)}</small>`
+                : `<br><small style="color:var(--text-muted);">📵 No SMS requested</small>`;
             const tr = document.createElement("tr");
             tr.innerHTML = `
-                <td><strong>${item.complainant}</strong><br><small>📍 ${item.incidentLocation}</small></td>
-                <td><strong>${item.subject}</strong></td>
-                <td>${item.details}</td>
+                <td><strong>${escapeHtmlText(item.complainant)}</strong><br><small>📍 ${escapeHtmlText(item.incidentLocation)}</small>${smsLine}</td>
+                <td><strong>${escapeHtmlText(item.subject)}</strong></td>
+                <td>${escapeHtmlText(item.details)}</td>
                 <td><span class="status-badge ${badgeClass}">${currentStatus}</span></td>
-                <td><small style="color:var(--text-muted); font-weight:600;">${item.updatedBy || 'N/A'}</small></td>
+                <td><small style="color:var(--text-muted); font-weight:600;">${escapeHtmlText(item.updatedBy || 'N/A')}</small></td>
                 <td>
                     ${currentStatus.toLowerCase() === 'pending' ? `<button class="action-btn btn-resolve" data-id="${id}">Resolve Case</button>` : ''}
                     <button class="action-btn btn-archive" data-coll="complaints" data-id="${id}">Archive</button>
@@ -1016,6 +1081,16 @@ document.addEventListener("click", async (e) => {
                 type: "Document", 
                 timestamp: serverTimestamp()
             });
+            // send email if the resident opted in
+            if (info.prefEmailNotification) {
+                await sendStatusUpdateEmail(
+                    info.userEmail,
+                    info.fullName,
+                    `Your ${info.documentType} is Ready for Pickup`,
+                    `Good news! Your request for a ${info.documentType} has been approved and is now ready for pickup at the Barangay Hall.\n\nPurpose: ${info.purpose}\nProcessed by: ${activeAdmin}\n\nPlease bring a valid ID when claiming your document.`,
+                    activeAdmin
+                );
+            }
         }
     }
     
@@ -1038,6 +1113,16 @@ document.addEventListener("click", async (e) => {
                 type: "Blotter", 
                 timestamp: serverTimestamp()
             });
+            // send email if the resident opted in
+            if (info.prefEmailNotification) {
+                await sendStatusUpdateEmail(
+                    info.userEmail,
+                    info.complainant,
+                    `Your Case Report Has Been Resolved`,
+                    `Your blotter/case report has been marked as resolved by Barangay staff.\n\nCase: ${info.subject}\nLocation: ${info.incidentLocation}\nResolved by: ${activeAdmin}\n\nYou may visit the Barangay Hall if you have any follow-up concerns.`,
+                    activeAdmin
+                );
+            }
         }
     }
     
@@ -1065,6 +1150,21 @@ document.addEventListener("click", async (e) => {
                     type: "Deletion Alert", 
                     timestamp: serverTimestamp()
                 });
+
+                // send email if the resident opted in
+                if (recordData.prefEmailNotification) {
+                    const isBlotter = targetCollection === "complaints";
+                    const recordLabel = isBlotter
+                        ? `Case Report: ${recordData.subject}`
+                        : `Document Request: ${recordData.documentType}`;
+                    await sendStatusUpdateEmail(
+                        recordData.userEmail,
+                        recordData.fullName || recordData.complainant,
+                        `Your Filing Has Been Archived`,
+                        `Your record has been archived by Barangay staff and is no longer in the active processing queue.\n\n${recordLabel}\nArchived by: ${activeAdmin}\n\nContact the Barangay Hall if you have questions about this action.`,
+                        activeAdmin
+                    );
+                }
             }
         }
     }

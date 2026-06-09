@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="icon-black.svg" media="(prefers-color-scheme: light)">
     <link rel="icon" href="icon-white.svg" media="(prefers-color-scheme: dark)">
+    <!-- EmailJS SDK - enables sending emails directly from the browser without a backend -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
 
@@ -300,15 +302,19 @@
                                 <input type="text" id="reqPurpose" placeholder="Employment, Legal Verification, ID Issuance" required>
                             </div>
                             <div class="preference-manual-box">
-                                <h4>Optional Status Update</h4>
+                                <h4>Optional Status Update Channels</h4>
                                 <label class="checkbox-container">
                                     <input type="checkbox" id="docNotifSms">
-                                    Status updates via mobile SMS network
+                                    Notify via custom SMS number
                                 </label>
                                 <div id="docSmsGroup" class="form-group hidden" style="margin-top: 0.75rem;">
                                     <label for="docSmsNumber">Contact Mobile Number</label>
                                     <input type="tel" id="docSmsNumber" placeholder="09XXXXXXXXX" pattern="09[0-9]{9}">
                                 </div>
+                                <label class="checkbox-container" style="margin-top: 0.5rem;">
+                                    <input type="checkbox" id="docNotifEmail">
+                                    Notify via email (sent to your registered account email)
+                                </label>
                             </div>
                             <button type="submit" class="btn-submit">Dispatch Request Form</button>
                         </form>
@@ -339,15 +345,19 @@
                                 <textarea id="complaintDetails" rows="4" placeholder="Provide objective descriptions of events, dates, and entities involved..." required></textarea>
                             </div>
                             <div class="preference-manual-box">
-                                <h4>Optional Status Update</h4>
+                                <h4>Optional Status Update Channels</h4>
                                 <label class="checkbox-container">
                                     <input type="checkbox" id="complaintNotifSms">
-                                    Status updates via mobile SMS network
+                                    Notify via custom SMS number
                                 </label>
                                 <div id="complaintSmsGroup" class="form-group hidden" style="margin-top: 0.75rem;">
                                     <label for="complaintSmsNumber">Contact Mobile Number</label>
                                     <input type="tel" id="complaintSmsNumber" placeholder="09XXXXXXXXX" pattern="09[0-9]{9}">
                                 </div>
+                                <label class="checkbox-container" style="margin-top: 0.5rem;">
+                                    <input type="checkbox" id="complaintNotifEmail">
+                                    Notify via email (sent to your registered account email)
+                                </label>
                             </div>
                             <button type="submit" class="btn-submit btn-danger">File Official Report Dossier</button>
                         </form>
@@ -435,7 +445,7 @@
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Resident Info</th>
+                                        <th>Resident Info &amp; SMS Preference</th>
                                         <th>Requested Classification</th>
                                         <th>Filing Statutory Purpose</th>
                                         <th>Pipeline State Status</th>
@@ -460,7 +470,7 @@
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Complainant &amp; Site Address</th>
+                                        <th>Complainant, Site &amp; SMS Preference</th>
                                         <th>Incident Headline Category</th>
                                         <th>Objective Event Timeline Logs</th>
                                         <th>Case Action State</th>
