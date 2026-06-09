@@ -1113,10 +1113,6 @@ input, select {
     fill: currentColor;
 }
 
-.tracking-panel-view {
-    /* no special layout — each panel is just a stack of cards */
-}
-
 /* individual status card inside tracking panels */
 .tracking-status-card {
     display: flex;
