@@ -37,24 +37,9 @@ const db = getFirestore(app);
 // get the auth system ready so we can log users in and out
 const auth = getAuth(app);
 
-// EmailJS setup - used to send automatic email notifications
-// to residents when their request or report status is updated.
-//
-// HOW TO SET THIS UP:
-//   1. Go to https://www.emailjs.com and create a free account
-//   2. Add an Email Service (Gmail recommended) → copy the Service ID
-//   3. Create an Email Template with these variables:
-//        {{to_email}}   - recipient's email address
-//        {{to_name}}    - recipient's name
-//        {{subject}}    - email subject line
-//        {{message}}    - the status update message body
-//        {{updated_by}} - which admin processed the update
-//      Copy the Template ID.
-//   4. Go to Account → API Keys → copy your Public Key
-//   5. Replace the three placeholder strings below with your real values.
-const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";   // e.g. "service_abc123"
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";  // e.g. "template_xyz789"
-const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";   // e.g. "abcDEFghiJKL"
+const EMAILJS_SERVICE_ID  = "service_s8vgu0g";
+const EMAILJS_TEMPLATE_ID = "template_npuuxwc";
+const EMAILJS_PUBLIC_KEY  = "JsL09ZAjaA11YY_8f";
 
 // initialize EmailJS with your public key (must run before any emailjs.send() call)
 if (typeof emailjs !== "undefined") {
@@ -63,11 +48,6 @@ if (typeof emailjs !== "undefined") {
 
 // sends a status-update email to a resident if they opted in to email notifications.
 // call this inside any approve / resolve / archive handler after the firestore update.
-//   recipientEmail - the resident's registered email address
-//   recipientName  - their full name (shown in the greeting)
-//   subject        - email subject line (e.g. "Your Barangay Clearance is Ready")
-//   message        - the body text describing what changed
-//   updatedBy      - admin email or "System" to credit who made the change
 async function sendStatusUpdateEmail(recipientEmail, recipientName, subject, message, updatedBy) {
     if (typeof emailjs === "undefined") {
         console.warn("EmailJS SDK not loaded — skipping email send.");
@@ -1062,16 +1042,14 @@ document.addEventListener("click", async (e) => {
                 type: "Document", 
                 timestamp: serverTimestamp()
             });
-            // send email if the resident opted in
-            if (info.prefEmailNotification) {
-                await sendStatusUpdateEmail(
-                    info.userEmail,
-                    info.fullName,
-                    `Your ${info.documentType} is Ready for Pickup`,
-                    `Good news! Your request for a ${info.documentType} has been approved and is now ready for pickup at the Barangay Hall.\n\nPurpose: ${info.purpose}\nProcessed by: ${activeAdmin}\n\nPlease bring a valid ID when claiming your document.`,
-                    activeAdmin
-                );
-            }
+            // send email notification to the resident's registered email
+            await sendStatusUpdateEmail(
+                info.userEmail,
+                info.fullName,
+                `Your ${info.documentType} is Ready for Pickup`,
+                `Good news! Your request for a ${info.documentType} has been approved and is now ready for pickup at the Barangay Hall.\n\nPurpose: ${info.purpose}\nProcessed by: ${activeAdmin}\n\nPlease bring a valid ID when claiming your document.`,
+                activeAdmin
+            );
         }
     }
     
@@ -1094,16 +1072,14 @@ document.addEventListener("click", async (e) => {
                 type: "Blotter", 
                 timestamp: serverTimestamp()
             });
-            // send email if the resident opted in
-            if (info.prefEmailNotification) {
-                await sendStatusUpdateEmail(
-                    info.userEmail,
-                    info.complainant,
-                    `Your Case Report Has Been Resolved`,
-                    `Your blotter/case report has been marked as resolved by Barangay staff.\n\nCase: ${info.subject}\nLocation: ${info.incidentLocation}\nResolved by: ${activeAdmin}\n\nYou may visit the Barangay Hall if you have any follow-up concerns.`,
-                    activeAdmin
-                );
-            }
+            // send email notification to the resident's registered email
+            await sendStatusUpdateEmail(
+                info.userEmail,
+                info.complainant,
+                `Your Case Report Has Been Resolved`,
+                `Your blotter/case report has been marked as resolved by Barangay staff.\n\nCase: ${info.subject}\nLocation: ${info.incidentLocation}\nResolved by: ${activeAdmin}\n\nYou may visit the Barangay Hall if you have any follow-up concerns.`,
+                activeAdmin
+            );
         }
     }
     
@@ -1132,20 +1108,18 @@ document.addEventListener("click", async (e) => {
                     timestamp: serverTimestamp()
                 });
 
-                // send email if the resident opted in
-                if (recordData.prefEmailNotification) {
-                    const isBlotter = targetCollection === "complaints";
-                    const recordLabel = isBlotter
-                        ? `Case Report: ${recordData.subject}`
-                        : `Document Request: ${recordData.documentType}`;
-                    await sendStatusUpdateEmail(
-                        recordData.userEmail,
-                        recordData.fullName || recordData.complainant,
-                        `Your Filing Has Been Archived`,
-                        `Your record has been archived by Barangay staff and is no longer in the active processing queue.\n\n${recordLabel}\nArchived by: ${activeAdmin}\n\nContact the Barangay Hall if you have questions about this action.`,
-                        activeAdmin
-                    );
-                }
+                // send email notification to the resident's registered email
+                const isBlotter = targetCollection === "complaints";
+                const recordLabel = isBlotter
+                    ? `Case Report: ${recordData.subject}`
+                    : `Document Request: ${recordData.documentType}`;
+                await sendStatusUpdateEmail(
+                    recordData.userEmail,
+                    recordData.fullName || recordData.complainant,
+                    `Your Filing Has Been Archived`,
+                    `Your record has been archived by Barangay staff and is no longer in the active processing queue.\n\n${recordLabel}\nArchived by: ${activeAdmin}\n\nContact the Barangay Hall if you have questions about this action.`,
+                    activeAdmin
+                );
             }
         }
     }
