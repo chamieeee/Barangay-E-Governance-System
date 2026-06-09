@@ -753,6 +753,77 @@ function initializeDataPipelineMonitors() {
     // both the doc requests listener and the complaints listener can push to it
     let globalArchiveArray = [];
 
+    // caches for search filtering
+    let docCache = [];
+    let blotterCache = [];
+
+    // search filter state
+    let docSearchTerm = "";
+    let blotterSearchTerm = "";
+    let archiveSearchTerm = "";
+
+    // wire up the doc pipeline search input
+    const docSearchInput = document.getElementById("docPipelineSearch");
+    if (docSearchInput) {
+        docSearchInput.addEventListener("input", (e) => {
+            docSearchTerm = e.target.value.toLowerCase();
+            // each cache entry is { item, id } — pass entry.item (the raw firestore data) to the matcher
+            renderDocTable(docCache.filter(entry => matchesDocSearch(entry.item, docSearchTerm)));
+        });
+    }
+
+    // wire up the blotter search input
+    const blotterSearchInput = document.getElementById("blotterSearch");
+    if (blotterSearchInput) {
+        blotterSearchInput.addEventListener("input", (e) => {
+            blotterSearchTerm = e.target.value.toLowerCase();
+            // same — each entry is { item, id }, pass entry.item to the matcher
+            renderBlotterTable(blotterCache.filter(entry => matchesBlotterSearch(entry.item, blotterSearchTerm)));
+        });
+    }
+
+    // wire up the archive vault search input
+    const archiveSearchInput = document.getElementById("archiveSearch");
+    if (archiveSearchInput) {
+        archiveSearchInput.addEventListener("input", (e) => {
+            archiveSearchTerm = e.target.value.toLowerCase();
+            renderArchiveTable();
+        });
+    }
+
+    // helpers: check if a record matches the search term
+    function matchesDocSearch(item, term) {
+        if (!term) return true;
+        return (
+            (item.fullName?.toLowerCase().includes(term)) ||
+            (item.userEmail?.toLowerCase().includes(term)) ||
+            (item.documentType?.toLowerCase().includes(term)) ||
+            (item.purpose?.toLowerCase().includes(term))
+        );
+    }
+
+    function matchesBlotterSearch(item, term) {
+        if (!term) return true;
+        return (
+            (item.complainant?.toLowerCase().includes(term)) ||
+            (item.userEmail?.toLowerCase().includes(term)) ||
+            (item.subject?.toLowerCase().includes(term)) ||
+            (item.incidentLocation?.toLowerCase().includes(term)) ||
+            (item.details?.toLowerCase().includes(term))
+        );
+    }
+
+    function matchesArchiveSearch(item, term) {
+        if (!term) return true;
+        return (
+            (item.callerName?.toLowerCase().includes(term)) ||
+            (item.userEmail?.toLowerCase().includes(term)) ||
+            (item.recordClass?.toLowerCase().includes(term)) ||
+            (item.summaryData?.toLowerCase().includes(term)) ||
+            (item.deletedByAdmin?.toLowerCase().includes(term))
+        );
+    }
+
     // this inner function redraws the archive table
     // we define it as a const so both listeners below can call it
     const renderArchiveTable = () => {
@@ -762,10 +833,20 @@ function initializeDataPipelineMonitors() {
 
         // sort archived records newest first using their timestamp
         // optional chaining (?.) handles the case where timestamp might be missing
-        globalArchiveArray.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+        let filtered = globalArchiveArray.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+        // apply archive search filter if there is one
+        if (archiveSearchTerm) {
+            filtered = filtered.filter(item => matchesArchiveSearch(item, archiveSearchTerm));
+        }
+
+        if (filtered.length === 0) {
+            archiveBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--text-muted);">No archived records match your search.</td></tr>`;
+            return;
+        }
 
         // loop through and create a table row for each archived record
-        globalArchiveArray.forEach((item) => {
+        filtered.forEach((item) => {
             const tr = document.createElement("tr");
             tr.style.backgroundColor = "#fffafb"; 
             tr.innerHTML = `
@@ -779,36 +860,20 @@ function initializeDataPipelineMonitors() {
         });
     };
 
-    // listener 1: watches the document_requests collection for any changes
-    // fires immediately once (to load existing data) then again whenever data changes
-    onSnapshot(docRequestColl, (snapshot) => {
+    // renders the doc pipeline table from a given data array
+    function renderDocTable(data) {
         const tbody = document.getElementById("docTableBody");
         if (!tbody) return;
-        tbody.innerHTML = ""; // clear the table before rebuilding it
+        tbody.innerHTML = "";
 
-        // clear out old "Document Request" entries from the archive array
-        // we do this because we're about to re-read all records and re-populate the archive
-        // without this, the same archived records would keep getting added multiple times
-        globalArchiveArray = globalArchiveArray.filter(x => x.recordClass !== "Document Request");
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--text-muted);">No records match your search.</td></tr>`;
+            return;
+        }
 
-        snapshot.forEach((rec) => {
-            const item = rec.data();
-            const id = rec.id; // the unique id of this document in firestore
-            const currentStatus = item.status || "Pending"; // default to pending if missing
-
-            // if this record is archived, add it to the archive list and skip the main table
-            if (currentStatus === "Archived by Admin") {
-                globalArchiveArray.push({
-                    id: id, callerName: item.fullName, userEmail: item.userEmail, recordClass: "Document Request",
-                    summaryData: `${item.documentType} - ${item.purpose}`, deletedByAdmin: item.updatedBy || "Staff", timestamp: item.timestamp
-                });
-                return; // "return" inside forEach is like "continue" - skip to the next item
-            }
-
-            // pick the right css class for the status badge color
+        data.forEach(({ item, id }) => {
+            const currentStatus = item.status || "Pending";
             let badgeClass = currentStatus.toLowerCase() === "ready for pickup" ? "status-approved" : "status-pending";
-
-            // create a new table row and fill it with the record's info
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td><strong>${item.fullName}</strong><br><small>${item.userEmail}</small></td>
@@ -821,36 +886,23 @@ function initializeDataPipelineMonitors() {
                     <button class="action-btn btn-archive" data-coll="document_requests" data-id="${id}">Archive</button>
                 </td>
             `;
-            tbody.appendChild(tr); // add the row to the table
+            tbody.appendChild(tr);
         });
+    }
 
-        renderArchiveTable(); // update the archive table after processing all records
-    });
-
-    // listener 2: same thing but for the complaints collection
-    onSnapshot(complaintsColl, (snapshot) => {
+    // renders the blotter table from a given data array
+    function renderBlotterTable(data) {
         const tbody = document.getElementById("complaintTableBody");
         if (!tbody) return;
         tbody.innerHTML = "";
 
-        // clear old complaint entries from the archive array before re-adding them
-        globalArchiveArray = globalArchiveArray.filter(x => x.recordClass !== "Blotter Report");
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--text-muted);">No records match your search.</td></tr>`;
+            return;
+        }
 
-        snapshot.forEach((rec) => {
-            const item = rec.data();
-            const id = rec.id;
+        data.forEach(({ item, id }) => {
             const currentStatus = item.status || "Pending";
-
-            // if archived, add to archive list and skip adding to the main table
-            if (currentStatus === "Archived by Admin") {
-                globalArchiveArray.push({
-                    id: id, callerName: item.complainant, userEmail: item.userEmail, recordClass: "Blotter Report",
-                    summaryData: `Subject: ${item.subject}`, deletedByAdmin: item.updatedBy || "Staff", timestamp: item.timestamp
-                });
-                return;
-            }
-
-            // pick badge color based on status
             let badgeClass = currentStatus.toLowerCase() === "resolved case" ? "status-resolved" : "status-pending";
             const tr = document.createElement("tr");
             tr.innerHTML = `
@@ -866,7 +918,67 @@ function initializeDataPipelineMonitors() {
             `;
             tbody.appendChild(tr);
         });
+    }
 
+    // listener 1: watches the document_requests collection for any changes
+    // fires immediately once (to load existing data) then again whenever data changes
+    onSnapshot(docRequestColl, (snapshot) => {
+        const tbody = document.getElementById("docTableBody");
+        if (!tbody) return;
+
+        // clear out old "Document Request" entries from the archive array
+        globalArchiveArray = globalArchiveArray.filter(x => x.recordClass !== "Document Request");
+
+        docCache = []; // reset the doc cache
+
+        snapshot.forEach((rec) => {
+            const item = rec.data();
+            const id = rec.id;
+            const currentStatus = item.status || "Pending";
+
+            if (currentStatus === "Archived by Admin") {
+                globalArchiveArray.push({
+                    id: id, callerName: item.fullName, userEmail: item.userEmail, recordClass: "Document Request",
+                    summaryData: `${item.documentType} - ${item.purpose}`, deletedByAdmin: item.updatedBy || "Staff", timestamp: item.timestamp
+                });
+                return;
+            }
+
+            docCache.push({ item, id });
+        });
+
+        // apply any active search filter, then render
+        renderDocTable(docCache.filter(entry => matchesDocSearch(entry.item, docSearchTerm)));
+        renderArchiveTable();
+    });
+
+    // listener 2: same thing but for the complaints collection
+    onSnapshot(complaintsColl, (snapshot) => {
+        const tbody = document.getElementById("complaintTableBody");
+        if (!tbody) return;
+
+        globalArchiveArray = globalArchiveArray.filter(x => x.recordClass !== "Blotter Report");
+
+        blotterCache = []; // reset the blotter cache
+
+        snapshot.forEach((rec) => {
+            const item = rec.data();
+            const id = rec.id;
+            const currentStatus = item.status || "Pending";
+
+            if (currentStatus === "Archived by Admin") {
+                globalArchiveArray.push({
+                    id: id, callerName: item.complainant, userEmail: item.userEmail, recordClass: "Blotter Report",
+                    summaryData: `Subject: ${item.subject}`, deletedByAdmin: item.updatedBy || "Staff", timestamp: item.timestamp
+                });
+                return;
+            }
+
+            blotterCache.push({ item, id });
+        });
+
+        // apply any active search filter, then render
+        renderBlotterTable(blotterCache.filter(entry => matchesBlotterSearch(entry.item, blotterSearchTerm)));
         renderArchiveTable();
     });
 }
@@ -1001,66 +1113,103 @@ document.addEventListener("click", async (e) => {
 
 // loads all announcements from firestore and displays them in real time
 function initializeLiveBulletinBoard() {
-    const residentContainer = document.getElementById("announcementContainer");   // residents see this
-    const adminContainer = document.getElementById("adminAnnouncementContainer"); // admins see this
+    const residentContainer = document.getElementById("announcementContainer");
+    const adminContainer = document.getElementById("adminAnnouncementContainer");
 
-    onSnapshot(announcementColl, (snapshot) => {
-        // collect all announcements from the snapshot into an array first
-        // so we can sort them before displaying
-        let sortedMemos = [];
-        snapshot.forEach(d => {
-            const data = d.data();
-            sortedMemos.push({ id: d.id, title: data.title, content: data.content, postedBy: data.postedBy, timestamp: data.timestamp });
-        });
+    // memo cache — populated by the onSnapshot listener, used by both render helpers
+    let sortedMemosCache = [];
 
-        // sort newest announcements first using the timestamp's seconds value
-        sortedMemos.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+    // ── render helpers defined FIRST so event listeners below can safely call them ──
 
-        // render the resident view (read-only, no buttons)
-        if (residentContainer) {
-            residentContainer.innerHTML = sortedMemos.length === 0 
-                ? `<p class="notif-empty-state">No announcements active.</p>` 
-                : sortedMemos.map(memo => `
-                    <article class="memo-document-card">
-                        <div class="memo-meta-strip"><span>MEMORANDUM DIRECTIVE</span><span>Issued By: ${memo.postedBy || 'Admin'}</span></div>
+    function renderResidentBulletin(term) {
+        if (!residentContainer) return;
+        const lowerTerm = (term || "").toLowerCase().trim();
+        const filtered = lowerTerm
+            ? sortedMemosCache.filter(m =>
+                (m.title || "").toLowerCase().includes(lowerTerm) ||
+                (m.content || "").toLowerCase().includes(lowerTerm) ||
+                (m.postedBy || "").toLowerCase().includes(lowerTerm)
+              )
+            : sortedMemosCache;
+
+        residentContainer.innerHTML = filtered.length === 0
+            ? `<p class="notif-empty-state">${lowerTerm ? 'No announcements match your search.' : 'No announcements active.'}</p>`
+            : filtered.map(memo => `
+                <article class="memo-document-card">
+                    <div class="memo-meta-strip"><span>MEMORANDUM DIRECTIVE</span><span>Issued By: ${memo.postedBy || 'Admin'}</span></div>
+                    <h4 class="memo-header-headline">📌 ${memo.title}</h4>
+                    <div class="memo-body-narrative">${escapeHtmlText(memo.content)}</div>
+                </article>
+            `).join("");
+    }
+
+    function renderAdminBulletin(term) {
+        if (!adminContainer) return;
+        const lowerTerm = (term || "").toLowerCase().trim();
+        const filtered = lowerTerm
+            ? sortedMemosCache.filter(m =>
+                (m.title || "").toLowerCase().includes(lowerTerm) ||
+                (m.content || "").toLowerCase().includes(lowerTerm) ||
+                (m.postedBy || "").toLowerCase().includes(lowerTerm)
+              )
+            : sortedMemosCache;
+
+        adminContainer.innerHTML = filtered.length === 0
+            ? `<p class="notif-empty-state">${lowerTerm ? 'No bulletins match your search.' : 'No active bulletins.'}</p>`
+            : filtered.map(memo => `
+                <article class="memo-document-card" id="memo-card-${memo.id}">
+                    <div id="memo-static-view-${memo.id}">
+                        <div class="memo-meta-strip"><span>AUTHOR HANDLES</span><span>Account Vector: ${memo.postedBy || 'Staff'}</span></div>
                         <h4 class="memo-header-headline">📌 ${memo.title}</h4>
                         <div class="memo-body-narrative">${escapeHtmlText(memo.content)}</div>
-                    </article>
-                `).join("");
-        }
+                        <div class="memo-control-toolbar">
+                            <button class="action-btn btn-memo-edit" data-id="${memo.id}">✏️ Edit</button>
+                            <button class="action-btn btn-memo-delete" data-id="${memo.id}">🗑️ Delete</button>
+                        </div>
+                    </div>
+                    <div id="memo-edit-view-${memo.id}" class="inline-edit-box hidden">
+                        <label style="font-size:0.75rem; font-weight:700; color:#475569; display:block; margin-bottom:4px;">EDIT DIRECTIVE TITLE</label>
+                        <input type="text" id="edit-title-${memo.id}" value="${memo.title}" style="width:100%; margin-bottom:8px; padding:6px;">
+                        <label style="font-size:0.75rem; font-weight:700; color:#475569; display:block; margin-bottom:4px;">EDIT BROADCAST NARRATIVE BODY</label>
+                        <textarea id="edit-content-${memo.id}" rows="5" style="width:100%; padding:6px;">${memo.content}</textarea>
+                        <div style="text-align: right; margin-top:8px;">
+                            <button class="action-btn btn-memo-save" data-id="${memo.id}" style="background-color:var(--semantic-success); color:white;">Save Changes</button>
+                            <button class="action-btn btn-memo-cancel" data-id="${memo.id}">Cancel</button>
+                        </div>
+                    </div>
+                </article>
+            `).join("");
+    }
 
-        // render the admin view (same cards but with edit and delete buttons)
-        if (adminContainer) {
-            adminContainer.innerHTML = sortedMemos.length === 0 
-                ? `<p class="notif-empty-state">No active bulletins.</p>` 
-                : sortedMemos.map(memo => `
-                    <article class="memo-document-card" id="memo-card-${memo.id}">
-                        <!-- the normal read view of the announcement -->
-                        <div id="memo-static-view-${memo.id}">
-                            <div class="memo-meta-strip"><span>AUTHOR HANDLES</span><span>Account Vector: ${memo.postedBy || 'Staff'}</span></div>
-                            <h4 class="memo-header-headline">📌 ${memo.title}</h4>
-                            <div class="memo-body-narrative">${escapeHtmlText(memo.content)}</div>
-                            <div class="memo-control-toolbar">
-                                <button class="action-btn btn-memo-edit" data-id="${memo.id}">✏️ Edit</button>
-                                <button class="action-btn btn-memo-delete" data-id="${memo.id}">🗑️ Delete</button>
-                            </div>
-                        </div>
-                        <!-- the edit form - hidden by default, shown when admin clicks edit -->
-                        <div id="memo-edit-view-${memo.id}" class="inline-edit-box hidden">
-                            <label style="font-size:0.75rem; font-weight:700; color:#475569; display:block; margin-bottom:4px;">EDIT DIRECTIVE TITLE</label>
-                            <input type="text" id="edit-title-${memo.id}" value="${memo.title}" style="width:100%; margin-bottom:8px; padding:6px;">
-                            
-                            <label style="font-size:0.75rem; font-weight:700; color:#475569; display:block; margin-bottom:4px;">EDIT BROADCAST NARRATIVE BODY</label>
-                            <textarea id="edit-content-${memo.id}" rows="5" style="width:100%; padding:6px;">${memo.content}</textarea>
-                            
-                            <div style="text-align: right; margin-top:8px;">
-                                <button class="action-btn btn-memo-save" data-id="${memo.id}" style="background-color:var(--semantic-success); color:white;">Save Changes</button>
-                                <button class="action-btn btn-memo-cancel" data-id="${memo.id}">Cancel</button>
-                            </div>
-                        </div>
-                    </article>
-                `).join("");
-        }
+    // ── wire up search inputs (render helpers are defined above, safe to reference) ──
+
+    const residentBulletinSearch = document.getElementById("residentBulletinSearch");
+    if (residentBulletinSearch) {
+        residentBulletinSearch.addEventListener("input", (e) => {
+            renderResidentBulletin(e.target.value);
+        });
+    }
+
+    const adminBulletinSearch = document.getElementById("adminBulletinSearch");
+    if (adminBulletinSearch) {
+        adminBulletinSearch.addEventListener("input", (e) => {
+            renderAdminBulletin(e.target.value);
+        });
+    }
+
+    // ── live listener — populates the cache and re-renders both views ──
+
+    onSnapshot(announcementColl, (snapshot) => {
+        sortedMemosCache = [];
+        snapshot.forEach(d => {
+            const data = d.data();
+            sortedMemosCache.push({ id: d.id, title: data.title, content: data.content, postedBy: data.postedBy, timestamp: data.timestamp });
+        });
+        sortedMemosCache.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+        // re-render both views, preserving whatever the user has already typed in the search box
+        renderResidentBulletin(residentBulletinSearch ? residentBulletinSearch.value : "");
+        renderAdminBulletin(adminBulletinSearch ? adminBulletinSearch.value : "");
     });
 }
 
@@ -1118,48 +1267,104 @@ function escapeHtmlText(text) {
    admins see literally everything in the system
    ============================================================ */
 
-// shows notifications for a specific resident
-// they only see notifications sent directly to them OR sent to "ALL_RESIDENTS"
-function initializeResidentNotificationsFeed(activeResidentEmail) {
-    const container = document.getElementById("residentNotifContainer");
-    if (!container) return; // stop if the element doesn't exist
+// ============================================================
+// RESIDENT FILING TRACKING LOG - EXPANDED SYSTEM
+// Tab A: own document requests + blotter reports with live statuses
+// Tab B: community feed of all residents' submissions (no private data)
+// ============================================================
 
-    onSnapshot(systemNotifColl, (snapshot) => {
-        // collect and sort all notifications newest first
+// global function exposed so the HTML onclick can call it
+// residents only have one tab now (their own filings), so this is kept for compatibility
+window.switchTrackingTab = function(tab) {
+    const myPanel = document.getElementById("trackPanelMyStatus");
+    const myBtn = document.getElementById("trackTabMyStatus");
+    myPanel?.classList.remove("hidden");
+    myBtn?.classList.add("active");
+};
+
+// helper: format a status badge for tracking cards
+function buildStatusBadge(status) {
+    let cls = "status-pending";
+    if (status === "Ready for Pickup") cls = "status-approved";
+    if (status === "Resolved Case") cls = "status-resolved";
+    if (status === "Archived by Admin") cls = "status-archived";
+    return `<span class="status-badge ${cls}">${status}</span>`;
+}
+
+// TAB A - My own document requests with current statuses
+function initializeMyDocumentStatusFeed(residentEmail) {
+    const container = document.getElementById("myDocStatusContainer");
+    if (!container) return;
+
+    onSnapshot(query(docRequestColl, where("userEmail", "==", residentEmail)), (snapshot) => {
+        let rows = [];
         let sortedDocs = [];
-        snapshot.forEach(d => sortedDocs.push(d.data()));
+        snapshot.forEach(d => sortedDocs.push({ id: d.id, ...d.data() }));
         sortedDocs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
-        let items = [];
-        sortedDocs.forEach((data) => {
-            // only show if it's for this specific resident or for everyone
-            if (data.targetResidentEmail === activeResidentEmail || data.targetResidentEmail === "ALL_RESIDENTS") {
-                
-                // convert the firestore timestamp (seconds since epoch) to a readable date string
-                const dateStr = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleString() : new Date().toLocaleString();
-                
-                // pick an accent color based on what type of notification it is
-                let accentBorder = "var(--accent-blue)";
-                if (data.type === "Blotter") accentBorder = "var(--semantic-pending)";     // orange
-                if (data.type === "Deletion Alert") accentBorder = "var(--semantic-danger)"; // red
-
-                // build the html for this notification card and add it to items
-                items.push(`
-                    <div class="log-item ${data.type === 'Blotter' ? 'blotter' : data.type === 'Deletion Alert' ? 'deletion' : 'success'}">
-                        <div class="log-content">
-                            <h4>${data.title}</h4>
-                            <p>${data.message}</p>
-                            <small style="color:var(--text-muted);">Action by: <b>${data.updatedBy || 'System'}</b></small>
-                        </div>
-                        <span class="log-timestamp">${dateStr}</span>
+        sortedDocs.forEach(item => {
+            if (item.status === "Archived by Admin") return; // skip archived from this view
+            const dateStr = item.timestamp ? new Date(item.timestamp.seconds * 1000).toLocaleString() : "—";
+            rows.push(`
+                <div class="tracking-status-card">
+                    <div class="tracking-card-left">
+                        <div class="tracking-doc-type">${escapeHtmlText(item.documentType)}</div>
+                        <div class="tracking-purpose">"${escapeHtmlText(item.purpose)}"</div>
+                        <div class="tracking-meta">Filed by: <span class="tracking-email">${escapeHtmlText(item.userEmail)}</span> &nbsp;·&nbsp; ${dateStr}</div>
                     </div>
-                `);
-            }
+                    <div class="tracking-card-right">
+                        ${buildStatusBadge(item.status)}
+                        <div class="tracking-handler">Handler: <b>${escapeHtmlText(item.updatedBy || 'Awaiting')}</b></div>
+                    </div>
+                </div>
+            `);
         });
 
-        // if no notifications match, show an empty state message instead
-        container.innerHTML = items.length === 0 ? `<p class="notif-empty-state">No notification history.</p>` : items.join("");
+        container.innerHTML = rows.length === 0
+            ? `<p class="notif-empty-state">No document requests filed yet.</p>`
+            : rows.join("");
     });
+}
+
+// TAB A - My own blotter/case reports with current statuses
+function initializeMyBlotterStatusFeed(residentEmail) {
+    const container = document.getElementById("myBlotterStatusContainer");
+    if (!container) return;
+
+    onSnapshot(query(complaintsColl, where("userEmail", "==", residentEmail)), (snapshot) => {
+        let rows = [];
+        let sortedDocs = [];
+        snapshot.forEach(d => sortedDocs.push({ id: d.id, ...d.data() }));
+        sortedDocs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+        sortedDocs.forEach(item => {
+            if (item.status === "Archived by Admin") return;
+            const dateStr = item.timestamp ? new Date(item.timestamp.seconds * 1000).toLocaleString() : "—";
+            rows.push(`
+                <div class="tracking-status-card">
+                    <div class="tracking-card-left">
+                        <div class="tracking-doc-type">${escapeHtmlText(item.subject)}</div>
+                        <div class="tracking-purpose">📍 ${escapeHtmlText(item.incidentLocation)}</div>
+                        <div class="tracking-meta">Filed by: <span class="tracking-email">${escapeHtmlText(item.userEmail)}</span> &nbsp;·&nbsp; ${dateStr}</div>
+                    </div>
+                    <div class="tracking-card-right">
+                        ${buildStatusBadge(item.status)}
+                        <div class="tracking-handler">Handler: <b>${escapeHtmlText(item.updatedBy || 'Awaiting')}</b></div>
+                    </div>
+                </div>
+            `);
+        });
+
+        container.innerHTML = rows.length === 0
+            ? `<p class="notif-empty-state">No case reports filed yet.</p>`
+            : rows.join("");
+    });
+}
+
+// loads the resident's own filings only — no community-wide data exposed to residents
+function initializeResidentNotificationsFeed(activeResidentEmail) {
+    initializeMyDocumentStatusFeed(activeResidentEmail);
+    initializeMyBlotterStatusFeed(activeResidentEmail);
 }
 
 // shows all notifications for the admin (no filter, they see everything)

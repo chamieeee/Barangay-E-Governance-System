@@ -202,6 +202,7 @@
                         <div class="board-header">
                             <h3 class="board-title">OFFICIAL MEMORANDUM DIRECTIVES BULLETIN BOARD</h3>
                             <p class="board-subtitle">Authorized institutional regulatory alerts, updates, and community public advisories</p>
+                            <input type="text" id="residentBulletinSearch" class="search-input bulletin-search" placeholder="Search announcements by title or content...">
                         </div>
                         <div id="announcementContainer" class="board-body-scroll">
                             <p class="notif-empty-state">No administrative community announcements have been published today.</p>
@@ -211,12 +212,34 @@
 
                 <section id="residentNotifPage" class="dashboard-panel page-view hidden">
                     <h2 class="panel-title">Filing System Tracking Ledger</h2>
-                    <div class="notification-panel card">
-                        <div class="notif-header">
-                            <h3>Active Verification Streams</h3>
+
+                    <!-- Tab switcher -->
+                    <div class="tracking-tab-bar">
+                        <button id="trackTabMyStatus" class="tracking-tab active" onclick="switchTrackingTab('myStatus')">
+                            <svg class="gov-icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            My Request Status
+                        </button>
+                    </div>
+
+                    <!-- Panel A: My own request/report statuses (live from Firestore) -->
+                    <div id="trackPanelMyStatus" class="tracking-panel-view">
+                        <div class="notification-panel card" style="margin-bottom:1.5rem;">
+                            <div class="notif-header">
+                                <h3>My Document Requests</h3>
+                                <span class="notif-sub">Live status of your clearance requests</span>
+                            </div>
+                            <div id="myDocStatusContainer" aria-live="polite" class="notif-list-wrapper">
+                                <p class="notif-empty-state">No document requests filed yet.</p>
+                            </div>
                         </div>
-                        <div id="residentNotifContainer" aria-live="polite" class="notif-list-wrapper">
-                            <p class="notif-empty-state">No transactional status logs recorded for your account filings.</p>
+                        <div class="notification-panel card">
+                            <div class="notif-header">
+                                <h3>My Blotter / Case Reports</h3>
+                                <span class="notif-sub">Live status of your filed incident reports</span>
+                            </div>
+                            <div id="myBlotterStatusContainer" aria-live="polite" class="notif-list-wrapper">
+                                <p class="notif-empty-state">No case reports filed yet.</p>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -381,6 +404,7 @@
                     <div class="announcement-board-wrapper">
                         <div class="board-header">
                             <h3 class="board-title">Manage Live Broadcasted Memorandums</h3>
+                            <input type="text" id="adminBulletinSearch" class="search-input bulletin-search" placeholder="Search bulletins by title or content...">
                         </div>
                         <div id="adminAnnouncementContainer" class="board-body-scroll">
                             <p class="notif-empty-state">No active directives available to configure or edit at this time.</p>
@@ -405,6 +429,7 @@
                     <div class="table-card">
                         <div class="table-header-flex">
                             <h3>Active Document Validation Queues</h3>
+                            <input type="text" id="docPipelineSearch" class="search-input" placeholder="Search by name, email, or document type...">
                         </div>
                         <div class="table-responsive-wrapper">
                             <table>
@@ -429,6 +454,7 @@
                     <div class="table-card">
                         <div class="table-header-flex">
                             <h3>Civilian Blotter Logs &amp; Structural Grievances</h3>
+                            <input type="text" id="blotterSearch" class="search-input" placeholder="Search by complainant, subject, or location...">
                         </div>
                         <div class="table-responsive-wrapper">
                             <table>
@@ -453,6 +479,7 @@
                     <div class="table-card" style="border-top: 4px solid var(--semantic-danger);">
                         <div class="table-header-flex" style="background: #fff5f5;">
                             <h3 style="color: #991b1b;">Permanent Historical Records Ledger</h3>
+                            <input type="text" id="archiveSearch" class="search-input" placeholder="Search archived records by name, email, or type...">
                         </div>
                         <div class="table-responsive-wrapper">
                             <table>

@@ -1069,3 +1069,172 @@ body.auth-mode .app-layout {
 input, select {
     font-size: inherit !important;
 }
+
+/* ============================================================
+   filing tracking log - tab system (resident)
+   ============================================================ */
+
+.tracking-tab-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border-formal);
+    padding-bottom: 0;
+}
+
+.tracking-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.2rem;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.tracking-tab:hover {
+    color: var(--gov-blue-secondary);
+}
+
+.tracking-tab.active {
+    color: var(--gov-blue-secondary);
+    border-bottom-color: var(--gov-blue-secondary);
+}
+
+.tracking-tab .gov-icon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+.tracking-panel-view {
+    /* no special layout — each panel is just a stack of cards */
+}
+
+/* individual status card inside tracking panels */
+.tracking-status-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--border-formal);
+    background: var(--surface-white);
+    transition: background 0.1s;
+}
+
+.tracking-status-card:last-child {
+    border-bottom: none;
+}
+
+.tracking-status-card:hover {
+    background: #f8fafc;
+}
+
+/* community cards are slightly de-emphasized (no personal data) */
+.tracking-status-card.community-card {
+    background: #fafbfc;
+}
+
+.tracking-card-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.tracking-doc-type {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: 0.2rem;
+}
+
+.tracking-purpose {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.2rem;
+}
+
+.tracking-meta {
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+.tracking-card-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.3rem;
+    flex-shrink: 0;
+}
+
+.tracking-handler {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.notif-sub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-left: 0.5rem;
+}
+
+/* ============================================================
+   search bar — shared style for all admin + resident sections
+   ============================================================ */
+
+.search-input {
+    padding: 0.45rem 0.8rem;
+    border: 1px solid var(--border-formal);
+    border-radius: 5px;
+    font-size: 0.82rem;
+    color: var(--text-primary);
+    background: var(--surface-white);
+    min-width: 240px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.search-input:focus {
+    border-color: var(--gov-blue-secondary);
+    box-shadow: 0 0 0 2px rgba(26,54,93,0.1);
+}
+
+/* bulletin board search sits below the board header row */
+.bulletin-search {
+    width: 100%;
+    margin-top: 0.75rem;
+    min-width: unset;
+}
+
+/* make the table-header-flex row accommodate the search box nicely */
+.table-header-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+}
+
+.table-header-flex h3 {
+    flex: 1;
+    white-space: nowrap;
+}
+
+/* email accountability label inside tracking cards */
+.tracking-email {
+    font-weight: 600;
+    color: var(--gov-blue-secondary);
+    font-style: italic;
+}
