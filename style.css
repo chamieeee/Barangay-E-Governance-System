@@ -1234,3 +1234,44 @@ input, select {
     color: var(--gov-blue-secondary);
     font-style: italic;
 }
+/* ── Admin Approval Queue styles ─────────────────────────────────────── */
+.btn-approve-admin {
+    padding: 5px 12px;
+    background: var(--semantic-success, #16a34a);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+}
+.btn-approve-admin:hover { opacity: 0.85; }
+
+.btn-reject-admin {
+    padding: 5px 12px;
+    background: var(--semantic-danger, #dc2626);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+}
+.btn-reject-admin:hover { opacity: 0.85; }
+
+/* Staff ID badge shown in the Registered Residents table */
+.staff-id-badge {
+    display: inline-block;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}

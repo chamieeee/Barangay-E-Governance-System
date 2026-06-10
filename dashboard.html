@@ -93,6 +93,26 @@
                             <svg class="gov-icon" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3z"/></svg>
                             Registered Residents
                         </button>
+                        <button class="nav-link" data-target="pendingAdminPage" style="position:relative;">
+                            <svg class="gov-icon" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 14l-3-3 1.41-1.41L11 12.17l4.59-4.58L17 9l-6 6z"/></svg>
+                            Admin Approvals
+                            <span id="pendingAdminBadge" style="
+                                display:none;
+                                position:absolute;
+                                top:6px; right:8px;
+                                background:var(--semantic-danger);
+                                color:#fff;
+                                font-size:0.65rem;
+                                font-weight:700;
+                                min-width:18px;
+                                height:18px;
+                                border-radius:999px;
+                                align-items:center;
+                                justify-content:center;
+                                padding:0 4px;
+                                line-height:1;
+                            ">0</span>
+                        </button>
                     </div>
                 </nav>
             </div>
@@ -527,6 +547,7 @@
                         <th>Sex / Civil Status</th>
                         <th>Occupation</th>
                         <th>Role</th>
+                        <th>Staff ID</th>
                     </tr>
                 </thead>
                 <tbody id="residentTableBody"></tbody>
@@ -534,6 +555,42 @@
         </div>
     </div>
 </section>
+
+                <!-- PENDING ADMIN APPROVAL QUEUE -->
+                <section id="pendingAdminPage" class="page-view hidden">
+                    <h2 class="panel-title">Admin Account Approval Queue</h2>
+                    <div class="table-card" style="border-top: 4px solid var(--gov-gold-accent);">
+                        <div class="table-header-flex" style="background: #fffbeb;">
+                            <div>
+                                <h3 style="color:#92400e;">⚙ Pending Admin Applications</h3>
+                                <p style="margin:0.25rem 0 0; font-size:0.85rem; color:var(--text-muted);">
+                                    Review new admin account requests below. Enter a Staff ID, then approve or reject each application. Applicants cannot log in until their application is approved.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="table-responsive-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Applicant Name &amp; Email</th>
+                                        <th>Address</th>
+                                        <th>Occupation</th>
+                                        <th>Applied On</th>
+                                        <th>Status</th>
+                                        <th>Assign Staff ID &amp; Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pendingAdminTableBody">
+                                    <tr>
+                                        <td colspan="6" style="padding:2rem; text-align:center; color:var(--text-muted);">
+                                            Loading pending applications...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
 
             </main>
         </div>

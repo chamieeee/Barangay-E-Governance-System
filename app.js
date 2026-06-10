@@ -77,6 +77,7 @@ const docRequestColl = collection(db, "document_requests");
 const complaintsColl = collection(db, "complaints");
 const systemNotifColl = collection(db, "system_notifications"); 
 const announcementColl = collection(db, "announcements");
+const pendingAdminsColl = collection(db, "pending_admins");
 
 // this object stores the price of each document type
 // we use it to auto-fill the fee whenever the user picks a document
@@ -105,6 +106,12 @@ let currentCachedUserRole = "Resident";
 // if we don't stop them, they keep running even after logout which causes bugs
 let activeDashboardStatsUnsubscribers = [];
 
+// BUG FIX: this flag blocks onAuthStateChanged from redirecting to dashboard.html
+// while registration is still in progress. without this, firebase fires onAuthStateChanged
+// the moment the auth account is created (step 1), which redirects the page before
+// setDoc() (step 2) gets a chance to write the profile data to firestore.
+let isRegistrationInProgress = false;
+
 
 /* part 1 - handling login, logout, and page redirecting
    this is the first thing that runs when the page loads */
@@ -129,7 +136,11 @@ onAuthStateChanged(auth, async (user) => {
 
         // if they're already logged in but somehow on the login page, send them to the dashboard
         // this handles the case where they manually type index.html in the url
+        // BUG FIX: skip the redirect if registration is still in progress —
+        // firebase fires this callback the moment the auth account is created,
+        // which would navigate away before setDoc() saves their profile to firestore
         if (ON_LOGIN_PAGE) {
+            if (isRegistrationInProgress) return; // wait — firestore write hasn't finished yet
             window.location.href = "dashboard.html";
             return; // stop running the rest of the code below
         }
@@ -193,6 +204,7 @@ onAuthStateChanged(auth, async (user) => {
                 initializeAdminLiveInflowFeed();    // start the real-time notification feed for admins
                 setupLiveDashboardCounters("Admin", user.email); // set up the stats cards
                 loadRegisteredResidents();           // load the residents table
+                loadPendingAdminRequests();          // load the pending admin approval queue
 
             } else {
                 // this person is a regular resident
@@ -530,33 +542,118 @@ async function handleRegisterSubmit(e) {
         isPwd: document.getElementById("regIsPwd").checked               // true or false
     };
 
+    // ── ADMIN REGISTRATION PATH ──────────────────────────────────────────────
+    // Admin accounts cannot activate immediately. They are stored in a
+    // "pending_admins" queue and must be approved (and given a Staff ID) by an
+    // existing admin before they can log in.
+    if (chosenRole === "Admin") {
+        try {
+            isRegistrationInProgress = true;
+
+            // step 1: create the Firebase Auth account so the email is reserved
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const uid = userCredential.user.uid;
+
+            // step 2: write the application to the pending_admins collection
+            // "approvalStatus" starts as "Pending" — admins will flip this to "Approved" or "Rejected"
+            await setDoc(doc(db, "pending_admins", uid), {
+                email: email,
+                role: "Admin",
+                approvalStatus: "Pending", // Pending | Approved | Rejected
+                staffId: null,             // assigned by an admin on approval
+                appliedOn: serverTimestamp(),
+                ...profileData
+            });
+
+            // step 3: sign them out immediately — they must wait for approval before logging in
+            await signOut(auth);
+            isRegistrationInProgress = false;
+
+            alert(
+                "Admin account application submitted!\n\n" +
+                "Your request is now pending review by an existing administrator. " +
+                "You will be assigned a Staff ID upon approval. " +
+                "Please check back later or contact your Barangay office."
+            );
+            document.getElementById("registerForm").reset();
+            // stay on the login page — do NOT redirect to dashboard
+
+        } catch (err) {
+            isRegistrationInProgress = false;
+            alert("Registration Failed: " + err.message);
+        }
+        return; // stop here — resident path below doesn't apply
+    }
+
+    // ── RESIDENT REGISTRATION PATH ───────────────────────────────────────────
     try {
+        // BUG FIX: raise the flag BEFORE createUserWithEmailAndPassword.
+        // firebase immediately fires onAuthStateChanged when the auth account is created,
+        // which would normally redirect to dashboard.html right away — before setDoc()
+        // below gets to run. the flag tells onAuthStateChanged to wait.
+        isRegistrationInProgress = true;
+
         // step 1: create the account in firebase auth (handles email/password)
-        // this gives us back a userCredential object which contains the new user's info
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
         // step 2: save the profile info and role to firestore
-        // we use setDoc so we can set the document id to the user's uid
-        // that way we can always find this user's data using their uid
-        // the ...profileData spreads all the fields from our profileData object into this document
         await setDoc(doc(db, "user_roles", userCredential.user.uid), {
             email: email, 
             role: chosenRole, 
-            createdOn: serverTimestamp(), // firebase fills in the exact time automatically
+            createdOn: serverTimestamp(),
             ...profileData
         });
+
+        // BUG FIX: lower the flag only AFTER setDoc() has fully completed.
+        isRegistrationInProgress = false;
+
         alert("Account registration finalized.");
-        document.getElementById("registerForm").reset(); // clear the form after success
-    } catch (err) { alert("Registration Failed: " + err.message); }
+        document.getElementById("registerForm").reset();
+        window.location.href = "dashboard.html";
+
+    } catch (err) {
+        isRegistrationInProgress = false;
+        alert("Registration Failed: " + err.message);
+    }
 }
 
 // handles the login form submission
 async function handleLoginSubmit(e) {
     e.preventDefault(); // stop page refresh
+    const emailVal = document.getElementById("loginEmail").value;
+    const passVal  = document.getElementById("loginPassword").value;
     try { 
         // firebase checks the email and password, throws an error if wrong
-        await signInWithEmailAndPassword(auth, document.getElementById("loginEmail").value, document.getElementById("loginPassword").value); 
-        // if successful, onAuthStateChanged fires automatically and handles the redirect
+        const credential = await signInWithEmailAndPassword(auth, emailVal, passVal);
+        const uid = credential.user.uid;
+
+        // check if this user has a pending admin application — if so, block them
+        // pending admins live in "pending_admins", not "user_roles", until approved
+        const pendingSnap = await getDoc(doc(db, "pending_admins", uid));
+        if (pendingSnap.exists()) {
+            const pendingData = pendingSnap.data();
+            if (pendingData.approvalStatus === "Pending") {
+                // sign them back out — they haven't been approved yet
+                await signOut(auth);
+                alert(
+                    "Access Denied — Approval Pending.\n\n" +
+                    "Your admin account application is still under review. " +
+                    "Please wait for an administrator to approve your request and assign your Staff ID."
+                );
+                return;
+            }
+            if (pendingData.approvalStatus === "Rejected") {
+                await signOut(auth);
+                alert(
+                    "Access Denied — Application Rejected.\n\n" +
+                    "Your admin account application was not approved. " +
+                    "Please contact your Barangay office for further assistance."
+                );
+                return;
+            }
+            // if "Approved" — their user_roles doc was written on approval, so fall through normally
+        }
+        // if successful and not blocked, onAuthStateChanged fires automatically and handles the redirect
     } 
     catch (err) { alert("Authentication Denied."); }
 }
@@ -1500,6 +1597,10 @@ function renderResidentsTable(data) {
     tableBody.innerHTML = data.map(user => {
         // combine sex and civil status into one column to save space
         const sexStatus = `${user.sex || 'N/A'} / ${user.civilStatus || 'N/A'}`;
+        // show staff ID column for admin rows
+        const staffIdCell = user.role === "Admin"
+            ? `<span class="staff-id-badge">${user.staffId || 'N/A'}</span>`
+            : `<span style="color:var(--text-muted);">—</span>`;
         
         return `
         <tr>
@@ -1509,7 +1610,200 @@ function renderResidentsTable(data) {
             <td style="padding: 12px; border-bottom: 1px solid var(--border-formal);">${sexStatus}</td>
             <td style="padding: 12px; border-bottom: 1px solid var(--border-formal);">${user.occupation || 'N/A'}</td>
             <td style="padding: 12px; border-bottom: 1px solid var(--border-formal);">${user.role || 'Resident'}</td>
+            <td style="padding: 12px; border-bottom: 1px solid var(--border-formal);">${staffIdCell}</td>
         </tr>
     `;
     }).join("");
 }
+
+
+/* part 10 - pending admin approval queue (only visible to admins)
+   allows existing admins to approve or reject new admin account applications
+   and assign a Staff ID before granting access */
+
+// loads all pending admin applications in real time and renders the approval table
+function loadPendingAdminRequests() {
+    const tableBody = document.getElementById("pendingAdminTableBody");
+    const badge = document.getElementById("pendingAdminBadge");
+    if (!tableBody) return;
+
+    // listen to the pending_admins collection in real time
+    onSnapshot(pendingAdminsColl, (snapshot) => {
+        let rows = [];
+        let pendingCount = 0;
+
+        snapshot.forEach((docSnap) => {
+            const d = docSnap.data();
+            const uid = docSnap.id;
+            const appliedDate = d.appliedOn ? new Date(d.appliedOn.seconds * 1000).toLocaleDateString() : "—";
+            const statusBadgeHtml = buildPendingAdminStatusBadge(d.approvalStatus);
+
+            // only show Pending applications in the action queue (approved/rejected are historical)
+            if (d.approvalStatus === "Pending") {
+                pendingCount++;
+                rows.push(`
+                    <tr id="pendingRow-${uid}">
+                        <td style="padding:12px; border-bottom:1px solid var(--border-formal);">
+                            <strong>${escapeHtmlText(d.fullName || 'N/A')}</strong><br>
+                            <small style="color:var(--text-muted);">${escapeHtmlText(d.email || '')}</small>
+                        </td>
+                        <td style="padding:12px; border-bottom:1px solid var(--border-formal);">${escapeHtmlText(d.completeAddress || 'N/A')}</td>
+                        <td style="padding:12px; border-bottom:1px solid var(--border-formal);">${escapeHtmlText(d.occupation || 'N/A')}</td>
+                        <td style="padding:12px; border-bottom:1px solid var(--border-formal);">${appliedDate}</td>
+                        <td style="padding:12px; border-bottom:1px solid var(--border-formal);">${statusBadgeHtml}</td>
+                        <td style="padding:12px; border-bottom:1px solid var(--border-formal);">
+                            <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                                <input 
+                                    type="text" 
+                                    id="staffIdInput-${uid}" 
+                                    placeholder="e.g. STAFF-001" 
+                                    style="padding:6px 10px; border:1px solid var(--border-formal); border-radius:6px; font-size:0.8rem; width:120px;"
+                                >
+                                <button 
+                                    onclick="approveAdminApplication('${uid}')" 
+                                    class="btn-approve-admin"
+                                    title="Approve and activate this admin account"
+                                >✓ Approve</button>
+                                <button 
+                                    onclick="rejectAdminApplication('${uid}')" 
+                                    class="btn-reject-admin"
+                                    title="Reject this admin application"
+                                >✕ Reject</button>
+                            </div>
+                        </td>
+                    </tr>
+                `);
+            }
+        });
+
+        // update the sidebar badge counter
+        if (badge) {
+            badge.textContent = pendingCount > 0 ? pendingCount : "";
+            badge.style.display = pendingCount > 0 ? "inline-flex" : "none";
+        }
+
+        tableBody.innerHTML = rows.length === 0
+            ? `<tr><td colspan="6" style="padding:2rem; text-align:center; color:var(--text-muted);">No pending admin applications at this time.</td></tr>`
+            : rows.join("");
+    });
+}
+
+// returns a colored status badge for a pending admin application
+function buildPendingAdminStatusBadge(status) {
+    const map = {
+        "Pending":  { color: "var(--semantic-pending)",  label: "⏳ Pending" },
+        "Approved": { color: "var(--semantic-success)",  label: "✓ Approved" },
+        "Rejected": { color: "var(--semantic-danger)",   label: "✕ Rejected" }
+    };
+    const s = map[status] || { color: "var(--text-muted)", label: status };
+    return `<span style="
+        background:${s.color}20; 
+        color:${s.color}; 
+        border:1px solid ${s.color}40;
+        padding:3px 10px; 
+        border-radius:999px; 
+        font-size:0.78rem; 
+        font-weight:600;
+        white-space:nowrap;
+    ">${s.label}</span>`;
+}
+
+// approves a pending admin application:
+// 1. validates that a Staff ID was entered
+// 2. writes the user to user_roles with role "Admin" and the assigned Staff ID
+// 3. updates the pending_admins doc to "Approved"
+// 4. logs the action in system_notifications
+window.approveAdminApplication = async function(uid) {
+    const staffIdInput = document.getElementById(`staffIdInput-${uid}`);
+    const staffId = staffIdInput ? staffIdInput.value.trim() : "";
+
+    if (!staffId) {
+        alert("Please enter a Staff ID before approving this application.");
+        staffIdInput?.focus();
+        return;
+    }
+
+    if (!confirm(`Approve this admin application and assign Staff ID "${staffId}"?\n\nThis will grant full Admin access to the portal.`)) return;
+
+    try {
+        // fetch the applicant's data from pending_admins
+        const pendingSnap = await getDoc(doc(db, "pending_admins", uid));
+        if (!pendingSnap.exists()) { alert("Application not found."); return; }
+        const appData = pendingSnap.data();
+
+        // step 1: promote to user_roles as a full Admin with the assigned Staff ID
+        await setDoc(doc(db, "user_roles", uid), {
+            email: appData.email,
+            role: "Admin",
+            staffId: staffId,
+            fullName: appData.fullName,
+            contactNumber: appData.contactNumber,
+            dateOfBirth: appData.dateOfBirth,
+            sex: appData.sex,
+            civilStatus: appData.civilStatus,
+            completeAddress: appData.completeAddress,
+            occupation: appData.occupation,
+            isSeniorCitizen: appData.isSeniorCitizen || false,
+            isPwd: appData.isPwd || false,
+            approvedOn: serverTimestamp(),
+            createdOn: serverTimestamp()
+        });
+
+        // step 2: mark the pending application as Approved and record the Staff ID
+        await updateDoc(doc(db, "pending_admins", uid), {
+            approvalStatus: "Approved",
+            staffId: staffId,
+            approvedBy: auth.currentUser?.email || "Admin",
+            approvedOn: serverTimestamp()
+        });
+
+        // step 3: log the approval in the system audit feed
+        await addDoc(systemNotifColl, {
+            title: "Admin Account Approved",
+            message: `${appData.fullName} (${appData.email}) has been approved as an Admin with Staff ID: ${staffId}.`,
+            updatedBy: auth.currentUser?.email || "Admin",
+            type: "Admin Approval",
+            timestamp: serverTimestamp()
+        });
+
+        alert(`✓ Admin account approved!\n\nStaff ID "${staffId}" has been assigned to ${appData.fullName}.\nThey can now log in with full Admin access.`);
+
+    } catch (err) {
+        console.error("Approval error:", err);
+        alert("Failed to approve application: " + err.message);
+    }
+};
+
+// rejects a pending admin application
+// the Firebase Auth account still exists but they can never log in (blocked by login guard)
+window.rejectAdminApplication = async function(uid) {
+    if (!confirm("Reject this admin application?\n\nThe applicant will not be granted Admin access.")) return;
+
+    try {
+        const pendingSnap = await getDoc(doc(db, "pending_admins", uid));
+        if (!pendingSnap.exists()) { alert("Application not found."); return; }
+        const appData = pendingSnap.data();
+
+        // update the pending doc status to Rejected
+        await updateDoc(doc(db, "pending_admins", uid), {
+            approvalStatus: "Rejected",
+            rejectedBy: auth.currentUser?.email || "Admin",
+            rejectedOn: serverTimestamp()
+        });
+
+        // log the rejection in the audit feed
+        await addDoc(systemNotifColl, {
+            title: "Admin Application Rejected",
+            message: `${appData.fullName} (${appData.email})'s admin account application was rejected.`,
+            updatedBy: auth.currentUser?.email || "Admin",
+            type: "Admin Approval",
+            timestamp: serverTimestamp()
+        });
+
+        alert(`Application for ${appData.fullName} has been rejected.`);
+
+    } catch (err) {
+        console.error("Rejection error:", err);
+        alert("Failed to reject application: " + err.message);
+    }
+};
